@@ -194,6 +194,9 @@
             <div class="voicing-info" id="voicingInfo">
                 <strong>Chord Voicing:</strong> <span id="voicingNotes">-</span>
             </div>
+            <div class="voicing-info" id="octaveInfo" style="background: #e8f5e8; color: #2e7d32;">
+                <strong>Octave Status:</strong> <span id="octaveStatus">-</span>
+            </div>
             <div class="chord-list" id="chordList">
                 <!-- Chord types will be displayed here -->
             </div>
@@ -494,22 +497,168 @@ ${chordNotation}`;
             // Transpose the voicing
             const transposedVoicing = transposeChord(originalVoicing, transpositionSemitones, randomPitch);
             
+            // Apply intelligent octave adjustment if needed (F3 to C5 range)
+            const octaveAdjustedVoicing = adjustChordOctave(transposedVoicing);
+            
             // Display results
             document.getElementById('chordDisplay').textContent = finalChord;
             document.getElementById('currentPitch').textContent = randomPitch;
-            document.getElementById('voicingNotes').textContent = transposedVoicing.join(', ');
+            document.getElementById('voicingNotes').textContent = octaveAdjustedVoicing.join(', ');
+            
+            // Show octave adjustment info
+            const rangeStatus = isChordInRange(octaveAdjustedVoicing) ? '✅ In range (F3-C5)' : '❌ Out of range';
+            const adjustmentInfo = window.lastOctaveAdjustment ? `<br><small style="color: #666;">${window.lastOctaveAdjustment}</small>` : '';
+            
+            document.getElementById('voicingNotes').textContent = octaveAdjustedVoicing.join(', ');
+            document.getElementById('octaveStatus').innerHTML = rangeStatus + adjustmentInfo;
             
             console.log('Generated chord:', finalChord);
             console.log('Original voicing:', originalVoicing);
             console.log('Transposition semitones:', transpositionSemitones);
             console.log('Transposed voicing:', transposedVoicing);
+            console.log('Octave adjusted voicing:', octaveAdjustedVoicing);
+            console.log('Range check result:', rangeStatus);
+            
+            // Debug: Show pitch calculations for each note
+            console.log('=== Pitch Analysis ===');
+            octaveAdjustedVoicing.forEach(note => {
+                const [pitchClass, octave] = noteToPitch(note);
+                const absolutePitch = pitchClass + (octave * 12);
+                console.log(`${note}: pitch_class=${pitchClass}, octave=${octave}, absolute_pitch=${absolutePitch} (${absolutePitch >= F3_PITCH && absolutePitch <= C5_PITCH ? '✅ In range' : '❌ Out of range'})`);
+            });
+            console.log(`Range: F3 (${F3_PITCH}) to C5 (${C5_PITCH})`);
             
             // Draw the chord on staff
-            drawStaff(transposedVoicing);
+            drawStaff(octaveAdjustedVoicing);
         }
 
         // Initialize the page
         updateChordList();
+
+        // Note to pitch conversion (from BPP web version)
+        function noteToPitch(note) {
+            const pitchClasses = {
+                "C": 0, "Db": 1, "C#": 1, "D": 2, "Eb": 3, "D#": 3, "E": 4,
+                "F": 5, "Gb": 6, "F#": 6, "G": 7, "Ab": 8, "G#": 8, "A": 9,
+                "Bb": 10, "A#": 10, "B": 11
+            };
+            
+            // Validate the note input
+            if (!note || typeof note !== 'string') {
+                console.error('Invalid note input:', note);
+                return [undefined, undefined];
+            }
+            
+            const name = note.slice(0, -1);
+            const octaveStr = note.slice(-1);
+            const octave = parseInt(octaveStr);
+            
+            // Validate the note name and octave
+            if (!(name in pitchClasses)) {
+                console.error('Invalid note name:', name, 'in note:', note);
+                return [undefined, undefined];
+            }
+            
+            if (isNaN(octave)) {
+                console.error('Invalid octave:', octaveStr, 'in note:', note);
+                return [undefined, undefined];
+            }
+            
+            return [pitchClasses[name], octave];
+        }
+
+        // Octave limit constants (F3 to C5 range)
+        const F3_PITCH = 5 + (3 * 12); // F3 = 41
+        const C5_PITCH = 0 + (5 * 12); // C5 = 60
+
+        // Check if chord is within comfortable reading range (F3 to C5)
+        function isChordInRange(chord) {
+            console.log('Checking chord range for:', chord);
+            for (const note of chord) {
+                const [pitchClass, octave] = noteToPitch(note);
+                if (pitchClass === undefined || octave === undefined) {
+                    console.error('Invalid note in chord:', note);
+                    continue;
+                }
+                // Use the exact same formula as BPP: absolute_pitch = pitch_class + (octave * 12)
+                const absolutePitch = pitchClass + (octave * 12);
+                console.log(`Note ${note}: pitch_class=${pitchClass}, octave=${octave}, absolute_pitch=${absolutePitch}`);
+                
+                if (absolutePitch < F3_PITCH || absolutePitch > C5_PITCH) {
+                    console.log(`Note ${note} out of range: ${absolutePitch} not in [${F3_PITCH}, ${C5_PITCH}] (F3-C5)`);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Automatically adjust chord octave if it's too high or too low
+        function adjustChordOctave(chord) {
+            console.log('Adjusting chord octave for:', chord);
+            
+            // Check if any note is out of range
+            let hasHighNotes = false;
+            let hasLowNotes = false;
+            
+            for (const note of chord) {
+                const [pitchClass, octave] = noteToPitch(note);
+                if (pitchClass !== undefined && octave !== undefined) {
+                    const absolutePitch = pitchClass + (octave * 12);
+                    if (absolutePitch > C5_PITCH) {
+                        hasHighNotes = true;
+                    }
+                    if (absolutePitch < F3_PITCH) {
+                        hasLowNotes = true;
+                    }
+                }
+            }
+            
+            // Determine octave shift based on out-of-range notes
+            let octaveShift = 0;
+            let adjustmentReason = '';
+            if (hasHighNotes) {
+                octaveShift = -1;
+                adjustmentReason = '🔽 Transposed down 1 octave (notes too high)';
+                console.log('Chord has high notes, transposing down 1 octave');
+            } else if (hasLowNotes) {
+                octaveShift = 1;
+                adjustmentReason = '🔼 Transposed up 1 octave (notes too low)';
+                console.log('Chord has low notes, transposing up 1 octave');
+            }
+            
+            if (octaveShift === 0) {
+                console.log('No octave adjustment needed - chord is already in range');
+                window.lastOctaveAdjustment = null;
+                return chord;
+            }
+            
+            // Apply octave shift
+            const adjustedChord = chord.map(note => {
+                const [pitchClass, octave] = noteToPitch(note);
+                if (pitchClass === undefined || octave === undefined) return note;
+                
+                const newOctave = octave + octaveShift;
+                // Use the same pitch class constants as in transposeNote
+                const PITCH_CLASSES_SHARP = {0: "C", 1: "C#", 2: "D", 3: "D#", 4: "E", 5: "F",
+                                             6: "F#", 7: "G", 8: "G#", 9: "A", 10: "A#", 11: "B"};
+                const PITCH_CLASSES_FLAT = {0: "C", 1: "Db", 2: "D", 3: "Eb", 4: "E", 5: "F",
+                                            6: "Gb", 7: "G", 8: "Ab", 9: "A", 10: "Bb", 11: "B"};
+                const FLAT_KEYS = new Set(["Db", "Ab", "Eb", "Bb", "F", "C"]);
+                
+                const pitchClasses = FLAT_KEYS.has("C") ? PITCH_CLASSES_FLAT : PITCH_CLASSES_SHARP;
+                const pitchName = pitchClasses[pitchClass];
+                
+                return `${pitchName}${newOctave}`;
+            });
+            
+            console.log('Adjusted chord:', adjustedChord);
+            console.log('Adjustment reason:', adjustmentReason);
+            
+            // Store adjustment info for display
+            window.lastOctaveAdjustment = adjustmentReason;
+            
+            return adjustedChord;
+        }
     </script>
 </body>
 </html> 
