@@ -71,6 +71,36 @@
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
 
+        .chord-category-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 30px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #e0e0e0;
+            color: #555;
+            margin: 5px;
+        }
+
+        .chord-category-btn.active {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .chord-category-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .chord-category-selector {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
         .chord-display {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
@@ -175,6 +205,13 @@
             <button class="mode-btn active" onclick="setMode('II')">Mode II</button>
             <button class="mode-btn" onclick="setMode('III')">Mode III</button>
         </div>
+        
+        <div class="chord-category-selector" id="chordCategorySelector" style="display: none;">
+            <button class="chord-category-btn active" onclick="selectChordCategory('random')">Random</button>
+            <button class="chord-category-btn" onclick="selectChordCategory('minor')">Minor</button>
+            <button class="chord-category-btn" onclick="selectChordCategory('dominant')">Dominant</button>
+            <button class="chord-category-btn" onclick="selectChordCategory('half-diminished')">Half-Diminished</button>
+        </div>
 
         <div class="chord-display" id="chordDisplay">
             Click "Generate Chord" to start
@@ -197,6 +234,12 @@
             <div class="voicing-info" id="octaveInfo" style="background: #e8f5e8; color: #2e7d32;">
                 <strong>Octave Status:</strong> <span id="octaveStatus">-</span>
             </div>
+            <div class="voicing-info" id="enharmonicInfo" style="background: #fff3e0; color: #e65100;">
+                <strong>Enharmonic Status:</strong> <span id="enharmonicStatus">-</span>
+            </div>
+            <div class="voicing-info" id="transpositionInfo" style="background: #e8f5e8; color: #2e7d32;">
+                <strong>Mode Transposition:</strong> <span id="transpositionStatus">-</span>
+            </div>
             <div class="chord-list" id="chordList">
                 <!-- Chord types will be displayed here -->
             </div>
@@ -205,7 +248,15 @@
 
     <script>
         let currentMode = 'II';
-        const pitches = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        let currentChordCategory = 'random';
+        
+        // Define valid key names based on our classification
+        const validKeys = [
+            // Sharp keys (use sharps in chord symbols)
+            'C', 'G', 'D', 'A', 'E', 'B', 'F#',
+            // Flat keys (use flats in chord symbols)  
+            'F', 'Bb', 'Eb', 'Ab', 'Db'
+        ];
         
         // Pitch mapping for transposition - matching BPP web version
         const pitchClasses = {
@@ -213,12 +264,6 @@
             "F": 5, "Gb": 6, "F#": 6, "G": 7, "Ab": 8, "G#": 8, "A": 9,
             "Bb": 10, "A#": 10, "B": 11
         };
-        
-        const PITCH_CLASSES_SHARP = {0: "C", 1: "C#", 2: "D", 3: "D#", 4: "E", 5: "F",
-                                     6: "F#", 7: "G", 8: "G#", 9: "A", 10: "A#", 11: "B"};
-        const PITCH_CLASSES_FLAT = {0: "C", 1: "Db", 2: "D", 3: "Eb", 4: "E", 5: "F",
-                                    6: "Gb", 7: "G", 8: "Ab", 9: "A", 10: "Bb", 11: "B"};
-        const FLAT_KEYS = new Set(["Db", "Ab", "Eb", "Bb", "F", "C"]);
 
         // Chord voicings in C (from bottom to top)
         const chordVoicings = {
@@ -228,15 +273,15 @@
                 'CII13': ['C4', 'E4', 'A4', 'Bb4']
             },
             'III': {
-                'CIII-7': ['Bb4', 'C5', 'Eb5', 'G5', 'B5'],
-                'CIII-9': ['Bb4', 'C5', 'Eb5', 'G5', 'B5', 'D6'],
-                'CIII-9(#11)': ['Bb4', 'C5', 'Eb5', 'G5', 'B5', 'D6', 'F#6'],
-                'CIII7': ['G4', 'Bb4', 'C5', 'E5', 'G#5'],
-                'CIII7/Δ7': ['G4', 'Bb4', 'C5', 'E5', 'G#5', 'B5'],
-                'CIII7/Δ7/#9': ['G4', 'Bb4', 'C5', 'E5', 'G#5', 'B5', 'D#6'],
-                'CIIIø7': ['C5', 'Eb5', 'Gb5', 'Bb5', 'D6'],
-                'CIIIø7b13': ['C5', 'Eb5', 'Gb5', 'Bb5', 'D6', 'G#6'],
-                'CIIIø7b13(♮3)': ['C5', 'Eb5', 'Gb5', 'Bb5', 'D6', 'E6', 'G#6']
+                'CIII-7': ['Bb4', 'C5', 'Eb5', 'G5', '|', 'B5'],
+                'CIII-9': ['Bb4', 'C5', 'Eb5', 'G5', '|', 'B5', 'D6'],
+                'CIII-9(#11)': ['Bb4', 'C5', 'Eb5', 'G5', '|', 'B5', 'D6', 'F#6'],
+                'CIII7': ['G4', 'Bb4', 'C5', 'E5', '|', 'G#5'],
+                'CIII7/Δ7': ['G4', 'Bb4', 'C5', 'E5', '|', 'G#5', 'B5'],
+                'CIII7/Δ7/#9': ['G4', 'Bb4', 'C5', 'E5', '|', 'G#5', 'B5', 'D#6'],
+                'CIIIø7': ['C5', 'Eb5', 'Gb5', 'Bb5', '|', 'D6'],
+                'CIIIø7b13': ['C5', 'Eb5', 'Gb5', 'Bb5', '|', 'D6', 'G#6'],
+                'CIIIø7b13(♮3)': ['C5', 'Eb5', 'Gb5', 'Bb5', '|', 'D6', 'E6', 'G#6']
             }
         };
 
@@ -246,19 +291,19 @@
             'CII13'
         ];
 
-        const modeIIIChords = [
-            'CIII-7',
-            'CIII-9',
-            'CIII-9(#11)',
-            'CIII7',
-            'CIII7/Δ7',
-            'CIII7/Δ7/#9',
-            'CIIIø7',
-            'CIIIø7b13',
-            'CIIIø7b13(♮3)'
-        ];
+                    const modeIIIChords = [
+                'CIII-7',
+                'CIII-9',
+                'CIII-9(#11)',
+                'CIII7',
+                'CIII7/Δ7',
+                'CIII7/Δ7/#9',
+                'CIIIø7',
+                'CIIIø7b13',
+                'CIIIø7b13(♮3)'
+            ];
 
-        function transposeNote(note, semitones, key) {
+        function transposeNote(note, semitones, key, chordType = null, mode = null) {
             const pitch = note.slice(0, -1);
             const octave = parseInt(note.slice(-1));
             const pitchClass = pitchClasses[pitch];
@@ -273,25 +318,17 @@
             const newPitch = ((pitchClass + semitones) % 12 + 12) % 12;
             const newOctave = octave + Math.floor((pitchClass + semitones) / 12);
             
-            // Choose sharp/flat based on key - exact BPP logic
-            const pitchClassMap = FLAT_KEYS.has(key) ? PITCH_CLASSES_FLAT : PITCH_CLASSES_SHARP;
-            let pitchName = pitchClassMap[newPitch];
-            
-            // Special handling for certain keys - EXACT BPP logic
-            if (["F#", "B", "E", "A", "D", "G"].includes(key)) {
-                if (["Db", "Eb", "Gb", "Ab", "Bb"].includes(pitchName)) {
-                    const sharpMap = {1: "C#", 3: "D#", 6: "F#", 8: "G#", 10: "A#"};
-                    pitchName = sharpMap[newPitch] || pitchName;
-                }
-            }
+            // Use BPP-style key-aware note representation
+            const preferredNoteName = getNoteRepresentation(newPitch, key, chordType, mode);
+            const pitchName = preferredNoteName;
             
             console.log(`Transposing ${note}: pitch=${pitch}(${pitchClass}) + ${semitones} = ${pitchName}(${newPitch}), octave=${octave} + ${Math.floor((pitchClass + semitones) / 12)} = ${newOctave}`);
             
             return `${pitchName}${newOctave}`;
         }
 
-        function transposeChord(notes, semitones, key) {
-            return notes.map(note => transposeNote(note, semitones, key));
+        function transposeChord(notes, semitones, key, chordType = null, mode = null) {
+            return notes.map(note => transposeNote(note, semitones, key, chordType, mode));
         }
 
         function noteToLilyPond(note) {
@@ -341,50 +378,108 @@
             const staffDiv = document.getElementById('staff');
             staffDiv.innerHTML = '';
             
-            // Convert notes to ABC format using the BPP approach
-            const abcNotes = convertToABCWithAccidentals(notes);
+            // Check if this is a Mode III chord with hand separation
+            const hasHandSeparation = notes.includes('|');
             
-            console.log(`🎼 Original notes:`, notes);
-            console.log(`🎼 ABC notes:`, abcNotes);
-            
-            // Create ABC chord notation: [CEGc]4
-            const chordNotation = `[${abcNotes.join('')}]4`;
-            
-            console.log(`🎼 Chord notation: ${chordNotation}`);
-            
-            // Create ABC notation string
-            const abcNotation = `X:1
+            if (hasHandSeparation && currentMode === 'III') {
+                // Split notes into left and right hand
+                const separatorIndex = notes.indexOf('|');
+                const leftHandNotes = notes.slice(0, separatorIndex);
+                const rightHandNotes = notes.slice(separatorIndex + 1);
+                
+                // Convert notes to ABC format
+                const leftHandABC = convertToABCWithAccidentals(leftHandNotes);
+                const rightHandABC = convertToABCWithAccidentals(rightHandNotes);
+                
+                console.log(`🎼 Original notes:`, notes);
+                console.log(`🎼 Left hand (bass):`, leftHandNotes);
+                console.log(`🎼 Right hand (treble):`, rightHandNotes);
+                console.log(`🎼 Left hand ABC:`, leftHandABC);
+                console.log(`🎼 Right hand ABC:`, rightHandABC);
+                
+                // Create ABC notation with two staves
+                const abcNotation = `X:1
+T:Chord Practice
+L:1/4
+K:C
+V:1 clef=treble
+[${rightHandABC.join('')}]4
+V:2 clef=bass
+[${leftHandABC.join('')}]4`;
+                
+                console.log(`🎼 ABC notation:`, abcNotation);
+                
+                // Render with ABC.js
+                try {
+                    ABCJS.renderAbc(staffDiv, abcNotation, {
+                        responsive: "resize",
+                        scale: 1.2,
+                        staffwidth: 400,
+                        paddingleft: 20,
+                        paddingright: 20,
+                        paddingtop: 20,
+                        paddingbottom: 20,
+                        add_classes: true,
+                        format: {
+                            titlefont: "serif 14",
+                            gchordfont: "serif 10",
+                            vocalfont: "serif 11"
+                        }
+                    });
+                    
+                    console.log(`✅ ABC.js rendered successfully with two staves`);
+                    console.log(`Staff drawn successfully with notes:`, notes);
+                    
+                } catch (error) {
+                    console.error(`❌ Error rendering ABC:`, error);
+                    staffDiv.innerHTML = `<p style="color: red;">Error rendering staff: ${error.message}</p>`;
+                }
+            } else {
+                // Single staff for Mode II or chords without hand separation
+                const abcNotes = convertToABCWithAccidentals(notes);
+                
+                console.log(`🎼 Original notes:`, notes);
+                console.log(`🎼 ABC notes:`, abcNotes);
+                
+                // Create ABC chord notation: [CEGc]4
+                const chordNotation = `[${abcNotes.join('')}]4`;
+                
+                console.log(`🎼 Chord notation: ${chordNotation}`);
+                
+                // Create ABC notation string
+                const abcNotation = `X:1
 T:Chord Practice
 L:1/4
 K:C
 ${chordNotation}`;
-            
-            console.log(`🎼 ABC notation:`, abcNotation);
-            
-            // Render with ABC.js using BPP approach
-            try {
-                ABCJS.renderAbc(staffDiv, abcNotation, {
-                    responsive: "resize",
-                    scale: 1.2,
-                    staffwidth: 400,
-                    paddingleft: 20,
-                    paddingright: 20,
-                    paddingtop: 20,
-                    paddingbottom: 20,
-                    add_classes: true,
-                    format: {
-                        titlefont: "serif 14",
-                        gchordfont: "serif 10",
-                        vocalfont: "serif 11"
-                    }
-                });
                 
-                console.log(`✅ ABC.js rendered successfully`);
-                console.log(`Staff drawn successfully with notes:`, notes);
+                console.log(`🎼 ABC notation:`, abcNotation);
                 
-            } catch (error) {
-                console.error(`❌ Error rendering ABC:`, error);
-                staffDiv.innerHTML = `<p style="color: red;">Error rendering staff: ${error.message}</p>`;
+                // Render with ABC.js using BPP approach
+                try {
+                    ABCJS.renderAbc(staffDiv, abcNotation, {
+                        responsive: "resize",
+                        scale: 1.2,
+                        staffwidth: 400,
+                        paddingleft: 20,
+                        paddingright: 20,
+                        paddingtop: 20,
+                        paddingbottom: 20,
+                        add_classes: true,
+                        format: {
+                            titlefont: "serif 14",
+                            gchordfont: "serif 10",
+                            vocalfont: "serif 11"
+                        }
+                    });
+                    
+                    console.log(`✅ ABC.js rendered successfully`);
+                    console.log(`Staff drawn successfully with notes:`, notes);
+                    
+                } catch (error) {
+                    console.error(`❌ Error rendering ABC:`, error);
+                    staffDiv.innerHTML = `<p style="color: red;">Error rendering staff: ${error.message}</p>`;
+                }
             }
         }
         
@@ -393,6 +488,11 @@ ${chordNotation}`;
             const accidentalState = {}; // Track accidentals by pitch class AND octave
             
             return notes.map(note => {
+                // Skip separator characters
+                if (note === '|') {
+                    return null;
+                }
+                
                 const noteName = note.slice(0, -1);
                 const octave = parseInt(note.slice(-1));
                 
@@ -448,7 +548,7 @@ ${chordNotation}`;
                 }
                 
                 return baseNote;
-            });
+            }).filter(note => note !== null); // Remove null values (separators)
         }
 
         function setMode(mode) {
@@ -461,7 +561,34 @@ ${chordNotation}`;
             });
             event.target.classList.add('active');
             
+            // Show/hide chord category selector for Mode III
+            const chordCategorySelector = document.getElementById('chordCategorySelector');
+            if (mode === 'III') {
+                chordCategorySelector.style.display = 'block';
+            } else {
+                chordCategorySelector.style.display = 'none';
+            }
+            
             // Update chord list
+            updateChordList();
+            
+            // Clear display
+            document.getElementById('chordDisplay').textContent = 'Click "Generate Chord" to start';
+            document.getElementById('currentPitch').textContent = '-';
+            document.getElementById('voicingNotes').textContent = '-';
+            document.getElementById('staff').innerHTML = '';
+        }
+
+        function selectChordCategory(category) {
+            currentChordCategory = category;
+            
+            // Update button states
+            document.querySelectorAll('.chord-category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update chord list to show filtered chords
             updateChordList();
             
             // Clear display
@@ -473,7 +600,28 @@ ${chordNotation}`;
 
         function updateChordList() {
             const chordList = document.getElementById('chordList');
-            const chords = currentMode === 'II' ? modeIIChords : modeIIIChords;
+            let chords;
+            
+            if (currentMode === 'II') {
+                chords = modeIIChords;
+            } else if (currentMode === 'III') {
+                // Filter chords based on selected category
+                switch (currentChordCategory) {
+                    case 'minor':
+                        chords = modeIIIChords.filter(chord => chord.includes('-7') || chord.includes('-9'));
+                        break;
+                    case 'dominant':
+                        chords = modeIIIChords.filter(chord => chord.includes('7') && !chord.includes('ø7') && !chord.includes('-7') && !chord.includes('-9'));
+                        break;
+                    case 'half-diminished':
+                        chords = modeIIIChords.filter(chord => chord.includes('ø7'));
+                        break;
+                    case 'random':
+                    default:
+                        chords = modeIIIChords;
+                        break;
+                }
+            }
             
             chordList.innerHTML = chords.map(chord => 
                 `<div class="chord-item">${chord}</div>`
@@ -481,55 +629,134 @@ ${chordNotation}`;
         }
 
         function generateChord() {
-            const randomPitch = pitches[Math.floor(Math.random() * pitches.length)];
-            const chords = currentMode === 'II' ? modeIIChords : modeIIIChords;
+            // Select a random valid key
+            const preferredPitch = validKeys[Math.floor(Math.random() * validKeys.length)];
+            
+            let chords;
+            if (currentMode === 'II') {
+                chords = modeIIChords;
+            } else if (currentMode === 'III') {
+                // Filter chords based on selected category
+                switch (currentChordCategory) {
+                    case 'minor':
+                        chords = modeIIIChords.filter(chord => chord.includes('-7') || chord.includes('-9'));
+                        break;
+                    case 'dominant':
+                        chords = modeIIIChords.filter(chord => chord.includes('7') && !chord.includes('ø7') && !chord.includes('-7') && !chord.includes('-9'));
+                        break;
+                    case 'half-diminished':
+                        chords = modeIIIChords.filter(chord => chord.includes('ø7'));
+                        break;
+                    case 'random':
+                    default:
+                        chords = modeIIIChords;
+                        break;
+                }
+            }
+            
             const randomChord = chords[Math.floor(Math.random() * chords.length)];
             
-            // Replace 'C' with the random pitch
-            const finalChord = randomChord.replace('C', randomPitch);
+            // Detect chord type for special notation rules
+            const isDiminished7 = randomChord.includes('ø7');
+            const isMinorDominant = randomChord.includes('-7') || randomChord.includes('-9');
+            const isMajorDominant = randomChord.includes('7') && !randomChord.includes('ø7') && !randomChord.includes('-7') && !randomChord.includes('-9');
+            const is13Chord = randomChord.includes('13');
+            
+            let chordType = null;
+            if (isDiminished7) {
+                // For Mode III ø7 chords, use 'diminished' to trigger custom mapping
+                chordType = currentMode === 'III' ? 'diminished' : 'ø7';
+            } else if (isMinorDominant) {
+                chordType = 'minor-dominant';
+            } else if (isMajorDominant) {
+                chordType = 'major-dominant';
+            } else if (is13Chord) {
+                chordType = '13';
+            }
+            
+            // Get the pitch class for transposition
+            const randomPitchIndex = pitchClasses[preferredPitch];
+            
+            // Replace 'C' with the preferred pitch representation
+            const finalChord = randomChord.replace('C', preferredPitch);
             
             // Get the original voicing in C
             const originalVoicing = chordVoicings[currentMode][randomChord];
             
             // Calculate transposition semitones (C = 0, so target pitch number is the semitones to transpose)
-            const transpositionSemitones = pitchClasses[randomPitch];
+            const transpositionSemitones = randomPitchIndex;
             
             // Transpose the voicing
-            const transposedVoicing = transposeChord(originalVoicing, transpositionSemitones, randomPitch);
+            const transposedVoicing = transposeChord(originalVoicing, transpositionSemitones, preferredPitch, chordType, currentMode);
             
-            // Apply intelligent octave adjustment if needed (F3 to C5 range)
-            const octaveAdjustedVoicing = adjustChordOctave(transposedVoicing);
+            // Apply intelligent octave adjustment if needed (F2 to C5 range)
+            const octaveAdjustedVoicing = adjustChordOctave(transposedVoicing, preferredPitch, chordType, currentMode);
+            
+            // Fix enharmonic conflicts within the same octave
+            const enharmonicFixedVoicing = fixEnharmonicConflictsEnhanced(octaveAdjustedVoicing, preferredPitch, chordType, currentMode);
+            
+            // Check if enharmonic conflicts were fixed
+            const hasEnharmonicChanges = JSON.stringify(octaveAdjustedVoicing) !== JSON.stringify(enharmonicFixedVoicing);
+            const enharmonicStatus = hasEnharmonicChanges ? '🔧 Fixed enharmonic conflicts' : '✅ No conflicts';
+            document.getElementById('enharmonicStatus').textContent = enharmonicStatus;
+            
+            // Determine mode transposition
+            const transpositionInfo = getModeTransposition(preferredPitch, currentMode);
+            document.getElementById('transpositionStatus').textContent = transpositionInfo;
             
             // Display results
             document.getElementById('chordDisplay').textContent = finalChord;
-            document.getElementById('currentPitch').textContent = randomPitch;
-            document.getElementById('voicingNotes').textContent = octaveAdjustedVoicing.join(', ');
+            document.getElementById('currentPitch').textContent = preferredPitch;
+            
+            // Format voicing display with hand separation for Mode III
+            let voicingDisplay = enharmonicFixedVoicing.join(', ');
+            if (currentMode === 'III' && voicingDisplay.includes('|')) {
+                voicingDisplay = voicingDisplay.replace(/, \|, /g, ' | ');
+                voicingDisplay = voicingDisplay.replace(/, \| /g, ' | ');
+                voicingDisplay = voicingDisplay.replace(/\|, /g, '| ');
+            }
+            document.getElementById('voicingNotes').textContent = voicingDisplay;
             
             // Show octave adjustment info
-            const rangeStatus = isChordInRange(octaveAdjustedVoicing) ? '✅ In range (F3-C5)' : '❌ Out of range';
-            const adjustmentInfo = window.lastOctaveAdjustment ? `<br><small style="color: #666;">${window.lastOctaveAdjustment}</small>` : '';
+                          const overallRangeStatus = isChordInRange(enharmonicFixedVoicing) ? '✅ In range (B1-C5)' : '❌ Out of range';
+                          const leftHandRangeStatus = isLeftHandInRange(enharmonicFixedVoicing) ? '✅ Left hand in range (B1-G#3)' : '❌ Left hand out of range (B1-G#3)';
+            const adjustmentInfo = window.lastOctaveAdjustment ? `<br><small style="color: #666;">${window.lastOctaveAdjustment}` : '';
             
-            document.getElementById('voicingNotes').textContent = octaveAdjustedVoicing.join(', ');
-            document.getElementById('octaveStatus').innerHTML = rangeStatus + adjustmentInfo;
+            document.getElementById('voicingNotes').textContent = enharmonicFixedVoicing.join(', ');
+            document.getElementById('octaveStatus').innerHTML = overallRangeStatus + '<br>' + leftHandRangeStatus + adjustmentInfo;
             
             console.log('Generated chord:', finalChord);
+            console.log('Root note:', preferredPitch);
+            console.log('Chord type:', chordType);
+            console.log('Current mode:', currentMode);
+            console.log('Mode transposition:', transpositionInfo);
             console.log('Original voicing:', originalVoicing);
             console.log('Transposition semitones:', transpositionSemitones);
             console.log('Transposed voicing:', transposedVoicing);
             console.log('Octave adjusted voicing:', octaveAdjustedVoicing);
-            console.log('Range check result:', rangeStatus);
+            console.log('Enharmonic fixed voicing:', enharmonicFixedVoicing);
+            console.log('Overall range check result:', overallRangeStatus);
+            console.log('Left hand range check result:', leftHandRangeStatus);
             
-            // Debug: Show pitch calculations for each note
-            console.log('=== Pitch Analysis ===');
-            octaveAdjustedVoicing.forEach(note => {
+                        // Debug: Show pitch calculations for each note
+            console.log('=== Final Pitch Analysis ===');
+            enharmonicFixedVoicing.forEach(note => {
+                if (note === '|') return; // Skip separator
                 const [pitchClass, octave] = noteToPitch(note);
                 const absolutePitch = pitchClass + (octave * 12);
-                console.log(`${note}: pitch_class=${pitchClass}, octave=${octave}, absolute_pitch=${absolutePitch} (${absolutePitch >= F3_PITCH && absolutePitch <= C5_PITCH ? '✅ In range' : '❌ Out of range'})`);
+                console.log(`${note}: pitch_class=${pitchClass}, octave=${octave}, absolute_pitch=${absolutePitch} (${absolutePitch >= D2_PITCH && absolutePitch <= C5_PITCH ? '✅ In range' : '❌ Out of range'})`);
             });
-            console.log(`Range: F3 (${F3_PITCH}) to C5 (${C5_PITCH})`);
+            console.log(`Overall Range: B1 (${D2_PITCH}) to C5 (${C5_PITCH})`);
+                          console.log(`Left Hand Range: B1 (${LEFT_HAND_LOW}) to G#3 (${LEFT_HAND_HIGH})`);
+            
+            // Show adjustment summary
+            if (window.lastOctaveAdjustment) {
+                console.log('=== Adjustment Summary ===');
+                console.log(window.lastOctaveAdjustment);
+            }
             
             // Draw the chord on staff
-            drawStaff(octaveAdjustedVoicing);
+            drawStaff(enharmonicFixedVoicing);
         }
 
         // Initialize the page
@@ -567,11 +794,41 @@ ${chordNotation}`;
             return [pitchClasses[name], octave];
         }
 
-        // Octave limit constants (F3 to C5 range)
-        const F3_PITCH = 5 + (3 * 12); // F3 = 41
+        // Octave limit constants (B1 to C5 range)
+        const D2_PITCH = 11 + (1 * 12); // B1 = 23
         const C5_PITCH = 0 + (5 * 12); // C5 = 60
+        
+        // Left hand (bass clef) range constraints (B1 to G#3)
+        const LEFT_HAND_LOW = 11 + (1 * 12); // B1 = 23
+        const LEFT_HAND_HIGH = 8 + (3 * 12); // G#3 = 44
 
-        // Check if chord is within comfortable reading range (F3 to C5)
+        // Check if left hand (bass clef) part is within required range (B1 to G#3)
+        function isLeftHandInRange(chord) {
+            // Find the separator to identify left hand notes
+            const separatorIndex = chord.indexOf('|');
+            if (separatorIndex === -1) {
+                // No separator means this is not a Mode III chord, so no left hand constraint
+                return true;
+            }
+            
+            // Get left hand notes (before the separator)
+            const leftHandNotes = chord.slice(0, separatorIndex);
+            
+            for (const note of leftHandNotes) {
+                const [pitchClass, octave] = noteToPitch(note);
+                if (pitchClass === undefined || octave === undefined) continue;
+                
+                const absolutePitch = pitchClass + (octave * 12);
+                if (absolutePitch < LEFT_HAND_LOW || absolutePitch > LEFT_HAND_HIGH) {
+                    console.log(`Left hand note ${note} out of range: ${absolutePitch} not in [${LEFT_HAND_LOW}, ${LEFT_HAND_HIGH}] (B1-G#3)`);
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // Check if chord is within comfortable reading range (B1 to C5)
         function isChordInRange(chord) {
             console.log('Checking chord range for:', chord);
             for (const note of chord) {
@@ -584,81 +841,545 @@ ${chordNotation}`;
                 const absolutePitch = pitchClass + (octave * 12);
                 console.log(`Note ${note}: pitch_class=${pitchClass}, octave=${octave}, absolute_pitch=${absolutePitch}`);
                 
-                if (absolutePitch < F3_PITCH || absolutePitch > C5_PITCH) {
-                    console.log(`Note ${note} out of range: ${absolutePitch} not in [${F3_PITCH}, ${C5_PITCH}] (F3-C5)`);
+                            if (absolutePitch < D2_PITCH || absolutePitch > C5_PITCH) {
+                console.log(`Note ${note} out of range: ${absolutePitch} not in [${D2_PITCH}, ${C5_PITCH}] (B1-C5)`);
                     return false;
                 }
             }
             return true;
         }
 
-        // Automatically adjust chord octave if it's too high or too low
-        function adjustChordOctave(chord) {
-            console.log('Adjusting chord octave for:', chord);
+        // Fix enharmonic conflicts (same pitch, different names) within the same octave
+        function fixEnharmonicConflicts(chord) {
+            console.log('Checking for enharmonic conflicts in:', chord);
             
-            // Check if any note is out of range
-            let hasHighNotes = false;
-            let hasLowNotes = false;
-            
-            for (const note of chord) {
+            // Group notes by octave
+            const notesByOctave = {};
+            chord.forEach(note => {
                 const [pitchClass, octave] = noteToPitch(note);
                 if (pitchClass !== undefined && octave !== undefined) {
-                    const absolutePitch = pitchClass + (octave * 12);
-                    if (absolutePitch > C5_PITCH) {
-                        hasHighNotes = true;
+                    if (!notesByOctave[octave]) notesByOctave[octave] = [];
+                    notesByOctave[octave].push({ note, pitchClass });
+                }
+            });
+            
+            // Check each octave for conflicts
+            let hasConflicts = false;
+            const fixedChord = chord.map(note => {
+                const [pitchClass, octave] = noteToPitch(note);
+                if (pitchClass === undefined || octave === undefined) return note;
+                
+                // Look for enharmonic conflicts in the same octave
+                const sameOctaveNotes = notesByOctave[octave] || [];
+                const conflictingNote = sameOctaveNotes.find(n => 
+                    n.pitchClass === pitchClass && n.note !== note
+                );
+                
+                if (conflictingNote) {
+                    hasConflicts = true;
+                    console.log(`Enharmonic conflict detected: ${note} and ${conflictingNote.note} are the same pitch in octave ${octave}`);
+                    
+                    // Choose the more common enharmonic equivalent
+                    // Prefer sharps for most keys, but this is a simple approach
+                    const enharmonicMap = {
+                        'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb'
+                    };
+                    
+                    const noteName = note.slice(0, -1);
+                    const octaveNum = note.slice(-1);
+                    
+                    if (enharmonicMap[noteName]) {
+                        const alternative = enharmonicMap[noteName] + octaveNum;
+                        console.log(`Converting ${note} to ${alternative} to avoid conflict`);
+                        return alternative;
+                    } else {
+                        // Try the reverse mapping
+                        const reverseMap = {
+                            'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#'
+                        };
+                        if (reverseMap[noteName]) {
+                            const alternative = reverseMap[noteName] + octaveNum;
+                            console.log(`Converting ${note} to ${alternative} to avoid conflict`);
+                            return alternative;
+                        }
                     }
-                    if (absolutePitch < F3_PITCH) {
-                        hasLowNotes = true;
+                }
+                
+                return note;
+            });
+            
+            if (hasConflicts) {
+                console.log('Fixed enharmonic conflicts:', fixedChord);
+            } else {
+                console.log('No enharmonic conflicts found');
+            }
+            
+            return fixedChord;
+        }
+
+        // BPP-style key-based note representation system
+        const PITCH_CLASSES_SHARP = {0: "C", 1: "C#", 2: "D", 3: "D#", 4: "E", 5: "F",
+                                     6: "F#", 7: "G", 8: "G#", 9: "A", 10: "A#", 11: "B"};
+        const PITCH_CLASSES_FLAT = {0: "C", 1: "Db", 2: "D", 3: "Eb", 4: "E", 5: "F",
+                                    6: "Gb", 7: "G", 8: "Ab", 9: "A", 10: "Bb", 11: "B"};
+        const FLAT_KEYS = new Set(["Db", "Ab", "Eb", "Bb", "F"]);
+        const SHARP_KEYS = new Set(["F#", "B", "E", "A", "D", "G", "C"]);
+
+        // Determine which transposition of the mode a chord belongs to
+        function getModeTransposition(rootNote, mode) {
+            if (mode === 'II') {
+                // Mode II transpositions
+                const transposition1 = new Set(["C", "Eb", "F#", "A"]);
+                const transposition2 = new Set(["Db", "E", "G", "Bb"]);
+                const transposition3 = new Set(["D", "F", "Ab", "B"]);
+                
+                if (transposition1.has(rootNote)) {
+                    return "Mode II, 1";
+                } else if (transposition2.has(rootNote)) {
+                    return "Mode II, 2";
+                } else if (transposition3.has(rootNote)) {
+                    return "Mode II, 3";
+                }
+            } else if (mode === 'III') {
+                // Mode III transpositions
+                const transposition1 = new Set(["C", "E", "Ab"]);
+                const transposition2 = new Set(["Db", "F", "A"]);
+                const transposition3 = new Set(["D", "F#", "Bb"]);
+                const transposition4 = new Set(["Eb", "G", "B"]);
+                
+                if (transposition1.has(rootNote)) {
+                    return "Mode III, 1";
+                } else if (transposition2.has(rootNote)) {
+                    return "Mode III, 2";
+                } else if (transposition3.has(rootNote)) {
+                    return "Mode III, 3";
+                } else if (transposition4.has(rootNote)) {
+                    return "Mode III, 4";
+                }
+            }
+            
+            return "Unknown transposition";
+        }
+
+        // Get the appropriate note representation based on key and mode
+        function getNoteRepresentation(pitchClass, key, chordType = null, mode = null, chordContext = null) {
+            console.log(`🔍 getNoteRepresentation called with: pitchClass=${pitchClass}, key=${key}, chordType=${chordType}, mode=${mode}`);
+            
+            // ===== MODE III CHORD LOGIC =====
+            
+            // 1. MODE III MINOR CHORDS (-7, -9, -9(#11)) - Secondary Root Logic
+            if (mode === 'III' && (chordType === 'minor-dominant' || chordType === 'minor-9' || chordType === 'minor-9-sharp11')) {
+                console.log(`🎯 Special Mode III minor rule triggered for key ${key}`);
+                
+                // Special case: Ab is treated as a sharp key for Mode III minor chords
+                if (key === 'Ab') {
+                    // For Ab minor chords, use sharps for left hand notes
+                    if (pitchClass === 7 || pitchClass === 0 || pitchClass === 2 || pitchClass === 10) {
+                        // Right hand notes: apply secondary root rule
+                        const secondaryRoot = 'G'; // Ab -> G
+                        const flatKeysForSecondaryRoot = new Set(["Eb", "Bb", "F", "C", "G"]);
+                        const sharpKeysForSecondaryRoot = new Set(["G#", "C#", "F#", "B", "E", "A", "D"]);
+                        
+                        if (flatKeysForSecondaryRoot.has(secondaryRoot)) {
+                            console.log(`🎯 ${key} key right hand note: secondary root ${secondaryRoot} is flat key, using flats for pitch class ${pitchClass}`);
+                            return PITCH_CLASSES_FLAT[pitchClass];
+                        } else if (sharpKeysForSecondaryRoot.has(secondaryRoot)) {
+                            console.log(`🎯 ${key} key right hand note: secondary root ${secondaryRoot} is sharp key, using sharps for pitch class ${pitchClass}`);
+                            return PITCH_CLASSES_SHARP[pitchClass];
+                        }
+                    } else {
+                        // Left hand notes: use sharps for Ab minor chords
+                        console.log(`🎯 ${key} key left hand note: using sharps for pitch class ${pitchClass}`);
+                        return PITCH_CLASSES_SHARP[pitchClass];
+                    }
+                }
+                
+                // Define flat and sharp keys for secondary root classification
+                const flatKeysForSecondaryRoot = new Set(["Eb", "Bb", "F", "C", "G"]);
+                const sharpKeysForSecondaryRoot = new Set(["G#", "C#", "F#", "B", "E", "A", "D"]);
+                
+                // Determine the secondary root based on the main chord root
+                let secondaryRoot = null;
+                if (key === 'C') secondaryRoot = 'B';      // CIII-7 right hand: B5
+                else if (key === 'Db') secondaryRoot = 'C'; // DbIII-7 right hand: C4
+                else if (key === 'D') secondaryRoot = 'C#'; // DIII-7 right hand: C#3
+                else if (key === 'Eb') secondaryRoot = 'D'; // EbIII-7 right hand: D3
+                else if (key === 'E') secondaryRoot = 'D#'; // EIII-7 right hand: D#3
+                else if (key === 'F') secondaryRoot = 'E';  // FIII-7 right hand: E3
+                else if (key === 'F#') secondaryRoot = 'F'; // F#III-7 right hand: F3
+                else if (key === 'G') secondaryRoot = 'F#'; // GIII-7 right hand: F#3
+                else if (key === 'Ab') secondaryRoot = 'G'; // AbIII-7 right hand: G3
+                else if (key === 'A') secondaryRoot = 'G#'; // AIII-7 right hand: G#3
+                else if (key === 'Bb') secondaryRoot = 'A'; // BbIII-7 right hand: A3
+                else if (key === 'B') secondaryRoot = 'Bb'; // BIII-7 right hand: Bb3
+                
+                console.log(`🎯 Secondary root for ${key}III: ${secondaryRoot}`);
+                
+                // Check if this is a right hand note by looking at the pitch classes that appear in right hand
+                let isRightHandNote = false;
+                
+                // For each key, identify which pitch classes are right hand notes (MINOR CHORDS ONLY)
+                if (key === 'C' && (pitchClass === 11 || pitchClass === 2 || pitchClass === 6)) isRightHandNote = true;           // B5, D6, F#6
+                else if (key === 'Db' && (pitchClass === 0 || pitchClass === 2 || pitchClass === 3 || pitchClass === 7)) isRightHandNote = true;  // C4, D#4, Eb4, G#6
+                else if (key === 'D' && (pitchClass === 1 || pitchClass === 4 || pitchClass === 8)) isRightHandNote = true;       // C#3, E6, G#6
+                else if (key === 'Eb' && (pitchClass === 2 || pitchClass === 5 || pitchClass === 9)) isRightHandNote = true;      // D3, F6, A6
+                else if (key === 'E' && (pitchClass === 3 || pitchClass === 6 || pitchClass === 10)) isRightHandNote = true;       // D#3, F#6, B6
+                else if (key === 'F' && (pitchClass === 4 || pitchClass === 7 || pitchClass === 11)) isRightHandNote = true;       // E3, G6, B6
+                else if (key === 'F#' && (pitchClass === 5 || pitchClass === 8 || pitchClass === 0)) isRightHandNote = true;      // F3, G#3/Ab3, C7
+                else if (key === 'G' && (pitchClass === 6 || pitchClass === 11 || pitchClass === 9 || pitchClass === 1)) isRightHandNote = true;  // F#3, B3, A6, C#7
+                else if (key === 'Ab' && (pitchClass === 7 || pitchClass === 0 || pitchClass === 2 || pitchClass === 10)) isRightHandNote = true;      // G3, C7, D7, Bb3
+                else if (key === 'A' && (pitchClass === 8 || pitchClass === 1 || pitchClass === 3)) isRightHandNote = true;       // G#3, C#7, D#7
+                else if (key === 'Bb' && (pitchClass === 9 || pitchClass === 2 || pitchClass === 4)) isRightHandNote = true;      // A3, D7, E7
+                else if (key === 'B' && (pitchClass === 10 || pitchClass === 1 || pitchClass === 3 || pitchClass === 5)) isRightHandNote = true;  // Bb3, C#/Db4, D#7, F7
+                
+                if (isRightHandNote) {
+                    // Right hand notes: apply secondary root rule
+                    if (flatKeysForSecondaryRoot.has(secondaryRoot)) {
+                        console.log(`🎯 ${key} key right hand note: secondary root ${secondaryRoot} is flat key, using flats for pitch class ${pitchClass}`);
+                        return PITCH_CLASSES_FLAT[pitchClass];
+                    } else if (sharpKeysForSecondaryRoot.has(secondaryRoot)) {
+                        console.log(`🎯 ${key} key right hand note: secondary root ${secondaryRoot} is sharp key, using sharps for pitch class ${pitchClass}`);
+                        return PITCH_CLASSES_SHARP[pitchClass];
+                    }
+                } else {
+                    // Left hand notes: use existing logic for G, A, B keys
+                    if (key === 'G') {
+                        console.log(`🎯 G key left hand note: using flats for pitch class ${pitchClass}`);
+                        return PITCH_CLASSES_FLAT[pitchClass];
+                    } else if (key === 'A') {
+                        console.log(`🎯 A key left hand note: using flats for pitch class ${pitchClass}`);
+                        return PITCH_CLASSES_FLAT[pitchClass];
+                    } else if (key === 'B') {
+                        console.log(`🎯 B key left hand note: using sharps for pitch class ${pitchClass}`);
+                        return PITCH_CLASSES_SHARP[pitchClass];
                     }
                 }
             }
             
-            // Determine octave shift based on out-of-range notes
-            let octaveShift = 0;
-            let adjustmentReason = '';
-            if (hasHighNotes) {
-                octaveShift = -1;
-                adjustmentReason = '🔽 Transposed down 1 octave (notes too high)';
-                console.log('Chord has high notes, transposing down 1 octave');
-            } else if (hasLowNotes) {
-                octaveShift = 1;
-                adjustmentReason = '🔼 Transposed up 1 octave (notes too low)';
-                console.log('Chord has low notes, transposing up 1 octave');
+            // 2. MODE III DOMINANT CHORDS (7, 7/Δ7, 7/Δ7/#9) - Custom Enharmonic Mapping
+            if (mode === 'III' && chordType === 'major-dominant') {
+                console.log(`🎯 Special Mode III dominant rule triggered for key ${key}`);
+                
+                // Custom enharmonic mapping for Mode III 7/Δ7/#9 chords based on desired output
+                const modeIII7EnharmonicMap = {
+                    'C': { 8: 'G#', 11: 'B', 3: 'D#' },           // G#3, B3, D#4
+                    'Db': { 9: 'A', 0: 'C', 4: 'E' },            // A3, C4, E4
+                    'D': { 10: 'Bb', 1: 'Db', 5: 'F' },          // Bb3, Db4, F4
+                    'Eb': { 11: 'B', 2: 'D', 6: 'F#' },           // B3, D4, F#4
+                    'E': { 0: 'C', 3: 'Eb', 7: 'G' },            // C4, Eb4, G4
+                    'F': { 1: 'C#', 4: 'E', 8: 'G#' },            // C#3, E3, G#3
+                    'F#': { 2: 'D', 5: 'F', 9: 'A' },            // D3, F3, A3
+                    'G': { 3: 'Eb', 6: 'Gb', 10: 'Bb' },           // Eb3, Gb3, Bb3
+                    'Ab': { 4: 'E', 7: 'G', 11: 'B' },            // E3, G3, B3
+                    'A': { 5: 'F', 8: 'Ab', 0: 'C' },            // F3, Ab3, C4
+                    'Bb': { 6: 'F#', 9: 'A', 1: 'C#' },           // F#3, A3, C#4
+                    'B': { 7: 'G', 10: 'Bb', 2: 'D' }            // G3, Bb3, D4
+                };
+                
+                // Check if this pitch class has a specific mapping for this key
+                if (modeIII7EnharmonicMap[key] && modeIII7EnharmonicMap[key][pitchClass]) {
+                    console.log(`🎯 ${key}III7 custom mapping: pitch class ${pitchClass} -> ${modeIII7EnharmonicMap[key][pitchClass]}`);
+                    return modeIII7EnharmonicMap[key][pitchClass];
+                }
             }
             
-            if (octaveShift === 0) {
-                console.log('No octave adjustment needed - chord is already in range');
-                window.lastOctaveAdjustment = null;
-                return chord;
+            // Special rule for ø7 chords (applies to both modes)
+            if (chordType === 'ø7') {
+                // ø7 chords: E, A, D, G, F, C use flats; F#, B, Db, Ab, Eb, Bb use sharps
+                const flatKeysForDiminished = new Set(["E", "A", "D", "G", "F", "C"]);
+                const sharpKeysForDiminished = new Set(["F#", "B", "Db", "Ab", "Eb", "Bb"]);
+                
+                if (flatKeysForDiminished.has(key)) {
+                    return PITCH_CLASSES_FLAT[pitchClass];
+                } else if (sharpKeysForDiminished.has(key)) {
+                    return PITCH_CLASSES_SHARP[pitchClass];
+                }
             }
             
-            // Apply octave shift
-            const adjustedChord = chord.map(note => {
+            // 3. MODE III DIMINISHED CHORDS (ø7, ø7b13, ø7b13(♮3)) - Custom Enharmonic Mapping
+            if (mode === 'III' && chordType === 'diminished') {
+                console.log(`🎯 Special Mode III diminished rule triggered for key ${key}`);
+                
+                // Custom enharmonic mapping for Mode III ø7, ø7b13, and ø7b13(♮3) chords based on desired output
+                const modeIIIDiminishedEnharmonicMap = {
+                    'C': { 3: 'Eb', 6: 'Gb', 10: 'Bb', 2: 'D', 4: 'E', 8: 'Ab' },           // Eb2, Gb2, Bb2, D3, E3, Ab3
+                    'Db': { 1: 'C#', 4: 'E', 7: 'G', 11: 'B', 3: 'Eb', 5: 'F', 9: 'A' },  // C#2, E2, G2, B2, Eb3, F3, A3
+                    'D': { 2: 'D', 5: 'F', 8: 'Ab', 0: 'C', 4: 'E', 6: 'F#', 10: 'Bb' },     // D2, F2, Ab2, C3, E3, F#3, Bb3
+                    'Eb': { 3: 'D#', 6: 'F#', 9: 'A', 1: 'C#', 5: 'F', 7: 'G', 11: 'B' },  // D#2, F#2, A2, C#3, F3, G3, B3
+                    'E': { 4: 'E', 7: 'G', 10: 'Bb', 2: 'D', 6: 'F#', 8: 'G#', 0: 'C' },   // E2, G2, Bb2, D3, F#3, G#3, C4
+                    'F': { 5: 'F', 8: 'Ab', 11: 'B', 3: 'Eb', 7: 'G', 9: 'A', 1: 'Db' },   // F2, Ab2, B2, Eb3, G3, A3, Db4
+                    'F#': { 6: 'F#', 9: 'A', 0: 'C', 4: 'E', 8: 'G#', 10: 'A#', 2: 'D' },   // F#2, A2, C3, E3, G#3, A#3, D4
+                    'G': { 7: 'G', 10: 'Bb', 1: 'Db', 5: 'F', 9: 'A', 11: 'B', 3: 'Eb' },   // G2, Bb2, Db3, F3, A3, B3, Eb4
+                    'Ab': { 8: 'G#', 11: 'B', 2: 'D', 6: 'F#', 10: 'Bb', 0: 'C', 4: 'E' }, // G#2, B2, D3, F#3, Bb3, C4, E4
+                    'A': { 9: 'A', 0: 'C', 3: 'Eb', 7: 'G', 11: 'B', 1: 'C#', 5: 'F' },    // A2, C3, Eb3, G3, B3, C#4, F4
+                    'Bb': { 10: 'A#', 1: 'C#', 4: 'E', 8: 'G#', 0: 'C', 2: 'D', 6: 'F#' }, // A#2, C#3, E3, G#3, C4, D4, F#4
+                    'B': { 11: 'B', 2: 'D', 5: 'F', 9: 'A', 1: 'C#', 3: 'D#', 7: 'G' }     // B1, D2, F2, A2, C#3, D#3, G3
+                };
+                
+                // Check if this pitch class has a specific mapping for this key
+                if (modeIIIDiminishedEnharmonicMap[key] && modeIIIDiminishedEnharmonicMap[key][pitchClass]) {
+                    console.log(`🎯 ${key}IIIø7 custom mapping: pitch class ${pitchClass} -> ${modeIIIDiminishedEnharmonicMap[key][pitchClass]}`);
+                    return modeIIIDiminishedEnharmonicMap[key][pitchClass];
+                }
+            }
+            
+            // Special rule for dominant chords: -7, -9, -9(#11), 7, 7/Δ7, 7/Δ7/#9
+            if (chordType === 'minor-dominant') {
+                // -7, -9, -9(#11) chords: Db is sharp key
+                const flatKeysForMinorDominant = new Set(["Ab", "Eb", "Bb", "F", "C", "G"]);
+                const sharpKeysForMinorDominant = new Set(["Db", "F#", "B", "E", "A", "D"]);
+                
+                if (flatKeysForMinorDominant.has(key)) {
+                    return PITCH_CLASSES_FLAT[pitchClass];
+                } else if (sharpKeysForMinorDominant.has(key)) {
+                    return PITCH_CLASSES_SHARP[pitchClass];
+                }
+            } else if (chordType === 'major-dominant') {
+                // 7, 7/Δ7, 7/Δ7/#9 chords: Db is flat key
+                const flatKeysForMajorDominant = new Set(["Db", "Ab", "Eb", "Bb", "F", "C", "G"]);
+                const sharpKeysForMajorDominant = new Set(["F#", "B", "E", "A", "D"]);
+                
+                if (flatKeysForMajorDominant.has(key)) {
+                    return PITCH_CLASSES_FLAT[pitchClass];
+                } else if (sharpKeysForMajorDominant.has(key)) {
+                    return PITCH_CLASSES_SHARP[pitchClass];
+                }
+            }
+            
+            // Mode-dependent key classification
+            if (mode === 'II') {
+                // Mode II: C is sharp key for most chords, but flat key for 13 chords
+                if (chordType === '13') {
+                    // Mode II 13 chords: C is flat key
+                    const modeII13FlatKeys = new Set(["C", "F", "Bb", "Eb", "Ab", "Db"]);
+                    const modeII13SharpKeys = new Set(["G", "D", "A", "E", "B", "F#"]);
+                    
+                    if (modeII13FlatKeys.has(key)) {
+                        return PITCH_CLASSES_FLAT[pitchClass];
+                    } else if (modeII13SharpKeys.has(key)) {
+                        return PITCH_CLASSES_SHARP[pitchClass];
+                    }
+                } else {
+                    // Mode II regular chords: C is sharp key
+                    const modeIIFlatKeys = new Set(["F", "Bb", "Eb", "Ab", "Db"]);
+                    const modeIISharpKeys = new Set(["C", "G", "D", "A", "E", "B", "F#"]);
+                    
+                    if (modeIIFlatKeys.has(key)) {
+                        return PITCH_CLASSES_FLAT[pitchClass];
+                    } else if (modeIISharpKeys.has(key)) {
+                        return PITCH_CLASSES_SHARP[pitchClass];
+                    }
+                }
+            } else if (mode === 'III') {
+                // Mode III: C is flat key
+                const modeIIIFlatKeys = new Set(["C", "F", "Bb", "Eb", "Ab", "Db"]);
+                const modeIIISharpKeys = new Set(["G", "D", "A", "E", "B", "F#"]);
+                
+                if (modeIIIFlatKeys.has(key)) {
+                    return PITCH_CLASSES_FLAT[pitchClass];
+                } else if (modeIIISharpKeys.has(key)) {
+                    return PITCH_CLASSES_SHARP[pitchClass];
+                }
+            }
+            
+            // Fallback to regular key-aware logic
+            if (FLAT_KEYS.has(key)) {
+                return PITCH_CLASSES_FLAT[pitchClass];
+            } else if (SHARP_KEYS.has(key)) {
+                return PITCH_CLASSES_SHARP[pitchClass];
+            } else {
+                // Default to sharps for unknown keys
+                return PITCH_CLASSES_SHARP[pitchClass];
+            }
+        }
+
+        // Enhanced letter name conflict detection and resolution with BPP-style key awareness
+        function fixEnharmonicConflictsEnhanced(chord, key = "C", chordType = null, mode = null) {
+            console.log(`Enhanced letter name conflict check for chord in key ${key}:`, chord);
+            
+            // Group notes by octave
+            const notesByOctave = {};
+            chord.forEach(note => {
+                const [pitchClass, octave] = noteToPitch(note);
+                if (pitchClass !== undefined && octave !== undefined) {
+                    const letterName = note[0]; // Extract letter name (C, D, E, F, G, A, B)
+                    if (!notesByOctave[octave]) notesByOctave[octave] = [];
+                    notesByOctave[octave].push({ note, pitchClass, letterName });
+                }
+            });
+            
+            // Check each octave for conflicts
+            let hasConflicts = false;
+            const fixedChord = chord.map(note => {
                 const [pitchClass, octave] = noteToPitch(note);
                 if (pitchClass === undefined || octave === undefined) return note;
                 
-                const newOctave = octave + octaveShift;
-                // Use the same pitch class constants as in transposeNote
-                const PITCH_CLASSES_SHARP = {0: "C", 1: "C#", 2: "D", 3: "D#", 4: "E", 5: "F",
-                                             6: "F#", 7: "G", 8: "G#", 9: "A", 10: "A#", 11: "B"};
-                const PITCH_CLASSES_FLAT = {0: "C", 1: "Db", 2: "D", 3: "Eb", 4: "E", 5: "F",
-                                            6: "Gb", 7: "G", 8: "Ab", 9: "A", 10: "Bb", 11: "B"};
-                const FLAT_KEYS = new Set(["Db", "Ab", "Eb", "Bb", "F", "C"]);
+                const letterName = note[0];
+                const sameOctaveNotes = notesByOctave[octave] || [];
                 
-                const pitchClasses = FLAT_KEYS.has("C") ? PITCH_CLASSES_FLAT : PITCH_CLASSES_SHARP;
-                const pitchName = pitchClasses[pitchClass];
+                // Look for letter name conflicts in the same octave
+                const conflictingNote = sameOctaveNotes.find(n => 
+                    n.letterName === letterName && n.note !== note
+                );
                 
-                return `${pitchName}${newOctave}`;
+                if (conflictingNote) {
+                    hasConflicts = true;
+                    console.log(`Letter name conflict detected: ${note} and ${conflictingNote.note} both use letter '${letterName}' in octave ${octave}`);
+                    
+                                        // Use BPP-style key-aware note representation
+                    const preferredNoteName = getNoteRepresentation(pitchClass, key, chordType, mode);
+                    const alternative = preferredNoteName + octave;
+                    
+                    console.log(`Converting ${note} to ${alternative} (key-aware representation for ${key})`);
+                    return alternative;
+                }
+                
+                // Also check for exact pitch class conflicts (enharmonic equivalents)
+                const enharmonicConflict = sameOctaveNotes.find(n => 
+                    n.pitchClass === pitchClass && n.note !== note
+                );
+                
+                if (enharmonicConflict) {
+                    hasConflicts = true;
+                    console.log(`Enharmonic conflict detected: ${note} and ${enharmonicConflict.note} are the same pitch in octave ${octave}`);
+                    
+                    // Use BPP-style key-aware note representation
+                    const preferredNoteName = getNoteRepresentation(pitchClass, key, chordType, mode);
+                    const alternative = preferredNoteName + octave;
+                    
+                    console.log(`Converting ${note} to ${alternative} (key-aware representation for ${key})`);
+                    return alternative;
+                }
+                
+                return note;
             });
             
-            console.log('Adjusted chord:', adjustedChord);
-            console.log('Adjustment reason:', adjustmentReason);
+            if (hasConflicts) {
+                console.log(`Fixed conflicts using ${key} key preferences:`, fixedChord);
+            } else {
+                console.log('No conflicts found');
+            }
             
-            // Store adjustment info for display
-            window.lastOctaveAdjustment = adjustmentReason;
+            return fixedChord;
+        }
+
+        // Automatically adjust chord octave if it's too high or too low
+        function adjustChordOctave(chord, key = "C", chordType = null, mode = null) {
+            console.log('Adjusting chord octave for:', chord);
             
-            return adjustedChord;
+            let currentChord = [...chord];
+            let totalOctaveShift = 0;
+            let maxAttempts = 5; // Prevent infinite loops
+            let attempts = 0;
+            
+            while (attempts < maxAttempts) {
+                attempts++;
+                console.log(`Adjustment attempt ${attempts}:`, currentChord);
+                
+                                // Check if any note is out of range
+                let hasHighNotes = false;
+                let hasLowNotes = false;
+                let hasLeftHandRangeIssues = false;
+                
+                for (const note of currentChord) {
+                    const [pitchClass, octave] = noteToPitch(note);
+                    if (pitchClass === undefined || octave === undefined) continue;
+                    
+                    const absolutePitch = pitchClass + (octave * 12);
+                    if (absolutePitch > C5_PITCH) {
+                        hasHighNotes = true;
+                    }
+                    if (absolutePitch < D2_PITCH) {
+                        hasLowNotes = true;
+                    }
+                }
+                
+                // Check left hand range constraint for Mode III chords
+                if (currentMode === 'III' && currentChord.includes('|')) {
+                    if (!isLeftHandInRange(currentChord)) {
+                        hasLeftHandRangeIssues = true;
+                    }
+                }
+                
+                // If all notes are in range and left hand constraint is satisfied, we're done
+                if (!hasHighNotes && !hasLowNotes && !hasLeftHandRangeIssues) {
+                    if (totalOctaveShift === 0) {
+                        console.log('No octave adjustment needed - chord is already in range');
+                        window.lastOctaveAdjustment = null;
+                    } else {
+                        console.log(`Final adjustment complete: total shift = ${totalOctaveShift} octave(s)`);
+                        window.lastOctaveAdjustment = `🔽 Transposed down ${Math.abs(totalOctaveShift)} octave(s) (notes out of range)`;
+                    }
+                    return currentChord;
+                }
+                
+                // Determine octave shift based on out-of-range notes
+                let octaveShift = 0;
+                if (hasHighNotes) {
+                    octaveShift = -1;
+                    console.log(`Attempt ${attempts}: Chord has high notes, transposing down 1 octave`);
+                } else if (hasLowNotes) {
+                    octaveShift = 1;
+                    console.log(`Attempt ${attempts}: Chord has low notes, transposing up 1 octave`);
+                } else if (hasLeftHandRangeIssues) {
+                    // Check if left hand is too high or too low
+                    const separatorIndex = currentChord.indexOf('|');
+                    if (separatorIndex !== -1) {
+                        const leftHandNotes = currentChord.slice(0, separatorIndex);
+                        let leftHandTooHigh = false;
+                        let leftHandTooLow = false;
+                        
+                        for (const note of leftHandNotes) {
+                            const [pitchClass, octave] = noteToPitch(note);
+                            if (pitchClass === undefined || octave === undefined) continue;
+                            
+                            const absolutePitch = pitchClass + (octave * 12);
+                            if (absolutePitch > LEFT_HAND_HIGH) {
+                                leftHandTooHigh = true;
+                            } else if (absolutePitch < LEFT_HAND_LOW) {
+                                leftHandTooLow = true;
+                            }
+                        }
+                        
+                        if (leftHandTooHigh) {
+                            octaveShift = -1;
+                            console.log(`Attempt ${attempts}: Left hand too high, transposing down 1 octave`);
+                        } else if (leftHandTooLow) {
+                            octaveShift = 1;
+                            console.log(`Attempt ${attempts}: Left hand too low, transposing up 1 octave`);
+                        }
+                    }
+                }
+                
+                // Apply octave shift
+                currentChord = currentChord.map(note => {
+                    if (note === '|') return note;
+                    const [pitchClass, octave] = noteToPitch(note);
+                    if (pitchClass === undefined || octave === undefined) return note;
+                    
+                    const newOctave = octave + octaveShift;
+                    
+                    // Use key-aware note representation (same as transposeNote)
+                    const pitchName = getNoteRepresentation(pitchClass, key, chordType, mode);
+                    
+                    return `${pitchName}${newOctave}`;
+                });
+                
+                totalOctaveShift += octaveShift;
+                console.log(`After attempt ${attempts}:`, currentChord);
+            }
+            
+            // If we exceeded max attempts, return the best we could do
+            console.warn(`Warning: Exceeded maximum octave adjustment attempts (${maxAttempts}). Returning best result.`);
+            window.lastOctaveAdjustment = `⚠️ Limited adjustment: total shift = ${totalOctaveShift} octave(s)`;
+            return currentChord;
         }
     </script>
 </body>
 </html> 
+
+
+
+
+
+
