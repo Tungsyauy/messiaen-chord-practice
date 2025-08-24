@@ -204,6 +204,7 @@
         <div class="mode-selector">
             <button class="mode-btn active" onclick="setMode('II')">Mode II</button>
             <button class="mode-btn" onclick="setMode('III')">Mode III</button>
+            <button class="mode-btn" onclick="setMode('AD')">Mode AD</button>
         </div>
         
         <div class="chord-category-selector" id="chordCategorySelector" style="display: none;">
@@ -211,6 +212,20 @@
             <button class="chord-category-btn" onclick="selectChordCategory('minor')">Minor</button>
             <button class="chord-category-btn" onclick="selectChordCategory('dominant')">Dominant</button>
             <button class="chord-category-btn" onclick="selectChordCategory('half-diminished')">Half-Diminished</button>
+        </div>
+
+        <div class="chord-category-selector" id="modeIIChordCategorySelector" style="display: none;">
+            <button class="chord-category-btn active" onclick="selectChordCategory('random')">Random</button>
+            <button class="chord-category-btn" onclick="selectChordCategory('II6')">II6</button>
+            <button class="chord-category-btn" onclick="selectChordCategory('II#11')">II#11</button>
+            <button class="chord-category-btn" onclick="selectChordCategory('II13')">II13</button>
+            <button class="chord-category-btn" onclick="selectChordCategory('II#9')">II#9</button>
+        </div>
+
+        <div class="chord-category-selector" id="adChordCategorySelector" style="display: none;">
+            <button class="chord-category-btn active" onclick="selectChordCategory('random')">Random</button>
+            <button class="chord-category-btn" onclick="selectChordCategory('AD1')">AD1</button>
+            <button class="chord-category-btn" onclick="selectChordCategory('AD5')">AD5</button>
         </div>
 
         <div class="chord-display" id="chordDisplay">
@@ -270,7 +285,8 @@
             'II': {
                 'CII6': ['G3', 'C4', 'E4', 'A4'],
                 'CII#11': ['G3', 'C4', 'E4', 'F#4'],
-                'CII13': ['C4', 'E4', 'A4', 'Bb4']
+                'CII13': ['C4', 'E4', 'A4', 'Bb4'],
+                'CII#9': ['Eb2', 'G2', 'C3', 'E3']
             },
             'III': {
                 'CIII-7': ['Bb4', 'C5', 'Eb5', 'G5', '|', 'B5'],
@@ -282,26 +298,68 @@
                 'CIIIø7': ['C5', 'Eb5', 'Gb5', 'Bb5', '|', 'D6'],
                 'CIIIø7b13': ['C5', 'Eb5', 'Gb5', 'Bb5', '|', 'D6', 'G#6'],
                 'CIIIø7b13(♮3)': ['C5', 'Eb5', 'Gb5', 'Bb5', '|', 'D6', 'E6', 'G#6']
+            },
+            'AD': {
+                'CAD1': ['C3', 'D3', 'F3', 'G3','|', 'Bb3',  'E4', 'A4'],
+                'CAD5': ['F2', 'G2', 'Bb2', 'D3', '|', 'E3', 'A3', 'C4']
+            }
+        };
+
+        // Complete AD chord voicings for all 12 keys
+        const adChordVoicings = {
+            'AD1': {
+                'C': ['C3', 'D3', 'F3', 'G3', '|','Bb3', 'E4', 'A4'],
+                'Db': ['Db3', 'Eb3', 'Gb3', 'Ab3', '|','B3', 'F4', 'Bb4'],
+                'D': ['D3', 'E3', 'G3', 'A3', '|','C4', 'F#4', 'B4'],
+                'Eb': ['Eb3', 'F3', 'Ab3', 'Bb3','|', 'Db4', 'G4', 'C5'],
+                'E': ['E3', 'F#3', 'A3', 'B3','|', 'D#4', 'G#4', 'C#5'],
+                'F': ['F3', 'G3', 'Bb3', 'C4','|', 'Eb4', 'A4', 'D5'],
+                'F#': ['F#3', 'G#3', 'B3', 'C#4', '|','E4', 'A#4', 'D#5'],
+                'G': ['G2', 'A2', 'C3', 'D3', '|','F3', 'B3', 'E4'],
+                'Ab': ['Ab2', 'Bb2', 'Db3', 'Eb3', '|','Gb3', 'C4', 'F4'],
+                'A': ['A2', 'B2', 'D3', 'E3', '|','G3', 'C#4', 'F#4'],
+                'Bb': ['Bb2', 'C3', 'Eb3', 'F3','|', 'Ab3', 'D4', 'G4'],
+                'B': ['B2', 'C#3', 'E3', 'F#3','|', 'A3', 'D#4', 'G#4']
+            },
+            'AD5': {
+                'F': ['Bb2', 'C3', 'Eb3', 'G3', '|', 'A3', 'D4', 'F4'],
+                'F#': ['B2', 'C#3', 'E3', 'G#3', '|', 'A#3', 'D#4', 'F#4'],
+                'G': ['C2', 'D2', 'F2', 'A2', '|', 'B2', 'E3', 'G3'],
+                'Ab': ['Db2', 'Eb2', 'Gb2', 'Bb2', '|', 'C3', 'F3', 'Ab3'],
+                'A': ['D2', 'E2', 'G2', 'B2', '|', 'C#3', 'F#3', 'A3'],
+                'Bb': ['Eb2', 'F2', 'Ab2', 'C3', '|', 'D3', 'G3', 'Bb3'],
+                'B': ['E2', 'F#2', 'A2', 'C#3', '|', 'D#3', 'G#3', 'B3'],
+                'C': ['F2', 'G2', 'Bb2', 'D3', '|', 'E3', 'A3', 'C4'],
+                'Db': ['F#2', 'G#2', 'B2', 'D#3', '|', 'F3', 'Bb3', 'Db4'],
+                'D': ['G2', 'A2', 'C3', 'E3', '|', 'F#3', 'B3', 'D4'],
+                'Eb': ['Ab2', 'Bb2', 'Db3', 'F3', '|', 'G3', 'C4', 'Eb4'],
+                'E': ['A2', 'B2', 'D3', 'F#3', '|', 'G#3', 'C#4', 'E4']
             }
         };
 
         const modeIIChords = [
             'CII6',
             'CII#11',
-            'CII13'
+            'CII13',
+            'CII#9'
         ];
 
-                    const modeIIIChords = [
-                'CIII-7',
-                'CIII-9',
-                'CIII-9(#11)',
-                'CIII7',
-                'CIII7/Δ7',
-                'CIII7/Δ7/#9',
-                'CIIIø7',
-                'CIIIø7b13',
-                'CIIIø7b13(♮3)'
-            ];
+        const modeIIIChords = [
+            'CIII-7',
+            'CIII-9',
+            'CIII-9(#11)',
+            'CIII7',
+            'CIII7/Δ7',
+            'CIII7/Δ7/#9',
+            'CIIIø7',
+            'CIIIø7b13',
+            'CIIIø7b13(♮3)'
+        ];
+
+        const modeADChords = [
+            'AD1',
+            'AD5'
+        ];
 
         function transposeNote(note, semitones, key, chordType = null, mode = null) {
             const pitch = note.slice(0, -1);
@@ -378,10 +436,10 @@
             const staffDiv = document.getElementById('staff');
             staffDiv.innerHTML = '';
             
-            // Check if this is a Mode III chord with hand separation
+            // Check if this is a Mode III or AD chord with hand separation
             const hasHandSeparation = notes.includes('|');
             
-            if (hasHandSeparation && currentMode === 'III') {
+            if (hasHandSeparation && (currentMode === 'III' || currentMode === 'AD')) {
                 // Split notes into left and right hand
                 const separatorIndex = notes.indexOf('|');
                 const leftHandNotes = notes.slice(0, separatorIndex);
@@ -461,8 +519,6 @@ ${chordNotation}`;
                         responsive: "resize",
                         scale: 1.2,
                         staffwidth: 400,
-                        paddingleft: 20,
-                        paddingright: 20,
                         paddingtop: 20,
                         paddingbottom: 20,
                         add_classes: true,
@@ -563,10 +619,21 @@ ${chordNotation}`;
             
             // Show/hide chord category selector for Mode III
             const chordCategorySelector = document.getElementById('chordCategorySelector');
+            const modeIIChordCategorySelector = document.getElementById('modeIIChordCategorySelector');
+            const adChordCategorySelector = document.getElementById('adChordCategorySelector');
+            
             if (mode === 'III') {
                 chordCategorySelector.style.display = 'block';
+                modeIIChordCategorySelector.style.display = 'none';
+                adChordCategorySelector.style.display = 'none';
+            } else if (mode === 'AD') {
+                chordCategorySelector.style.display = 'none';
+                modeIIChordCategorySelector.style.display = 'none';
+                adChordCategorySelector.style.display = 'block';
             } else {
                 chordCategorySelector.style.display = 'none';
+                modeIIChordCategorySelector.style.display = 'block';
+                adChordCategorySelector.style.display = 'none';
             }
             
             // Update chord list
@@ -603,7 +670,25 @@ ${chordNotation}`;
             let chords;
             
             if (currentMode === 'II') {
-                chords = modeIIChords;
+                // Filter chords based on selected category for Mode II
+                switch (currentChordCategory) {
+                    case 'II6':
+                        chords = modeIIChords.filter(chord => chord.includes('II6'));
+                        break;
+                    case 'II#11':
+                        chords = modeIIChords.filter(chord => chord.includes('II#11'));
+                        break;
+                    case 'II13':
+                        chords = modeIIChords.filter(chord => chord.includes('II13'));
+                        break;
+                    case 'II#9':
+                        chords = modeIIChords.filter(chord => chord.includes('II#9'));
+                        break;
+                    case 'random':
+                    default:
+                        chords = modeIIChords;
+                        break;
+                }
             } else if (currentMode === 'III') {
                 // Filter chords based on selected category
                 switch (currentChordCategory) {
@@ -619,6 +704,20 @@ ${chordNotation}`;
                     case 'random':
                     default:
                         chords = modeIIIChords;
+                        break;
+                }
+            } else if (currentMode === 'AD') {
+                // Filter chords based on selected category for AD mode
+                switch (currentChordCategory) {
+                    case 'AD1':
+                        chords = modeADChords.filter(chord => chord.includes('AD1'));
+                        break;
+                    case 'AD5':
+                        chords = modeADChords.filter(chord => chord.includes('AD5'));
+                        break;
+                    case 'random':
+                    default:
+                        chords = modeADChords;
                         break;
                 }
             }
@@ -634,7 +733,25 @@ ${chordNotation}`;
             
             let chords;
             if (currentMode === 'II') {
-                chords = modeIIChords;
+                // Filter chords based on selected category for Mode II
+                switch (currentChordCategory) {
+                    case 'II6':
+                        chords = modeIIChords.filter(chord => chord.includes('II6'));
+                        break;
+                    case 'II#11':
+                        chords = modeIIChords.filter(chord => chord.includes('II#11'));
+                        break;
+                    case 'II13':
+                        chords = modeIIChords.filter(chord => chord.includes('II13'));
+                        break;
+                    case 'II#9':
+                        chords = modeIIChords.filter(chord => chord.includes('II#9'));
+                        break;
+                    case 'random':
+                    default:
+                        chords = modeIIChords;
+                        break;
+                }
             } else if (currentMode === 'III') {
                 // Filter chords based on selected category
                 switch (currentChordCategory) {
@@ -652,6 +769,20 @@ ${chordNotation}`;
                         chords = modeIIIChords;
                         break;
                 }
+            } else if (currentMode === 'AD') {
+                // Filter chords based on selected category for AD mode
+                switch (currentChordCategory) {
+                    case 'AD1':
+                        chords = modeADChords.filter(chord => chord.includes('AD1'));
+                        break;
+                    case 'AD5':
+                        chords = modeADChords.filter(chord => chord.includes('AD5'));
+                        break;
+                    case 'random':
+                    default:
+                        chords = modeADChords;
+                        break;
+                }
             }
             
             const randomChord = chords[Math.floor(Math.random() * chords.length)];
@@ -661,6 +792,8 @@ ${chordNotation}`;
             const isMinorDominant = randomChord.includes('-7') || randomChord.includes('-9');
             const isMajorDominant = randomChord.includes('7') && !randomChord.includes('ø7') && !randomChord.includes('-7') && !randomChord.includes('-9');
             const is13Chord = randomChord.includes('13');
+            const isADChord = randomChord.includes('AD');
+            const isIISharp9 = randomChord.includes('II#9');
             
             let chordType = null;
             if (isDiminished7) {
@@ -672,22 +805,53 @@ ${chordNotation}`;
                 chordType = 'major-dominant';
             } else if (is13Chord) {
                 chordType = '13';
+            } else if (isADChord) {
+                chordType = 'AD';
+            } else if (isIISharp9) {
+                chordType = 'II#9';
             }
             
             // Get the pitch class for transposition
             const randomPitchIndex = pitchClasses[preferredPitch];
             
             // Replace 'C' with the preferred pitch representation
-            const finalChord = randomChord.replace('C', preferredPitch);
+            let finalChord;
+            if (currentMode === 'AD') {
+                // For AD mode, construct the chord name using the key and chord type
+                const chordTypeKey = randomChord.includes('AD1') ? 'AD1' : 'AD5';
+                finalChord = `${preferredPitch}${chordTypeKey}`;
+            } else {
+                // For Mode II and III, replace 'C' with the preferred pitch
+                finalChord = randomChord.replace('C', preferredPitch);
+            }
             
             // Get the original voicing in C
-            const originalVoicing = chordVoicings[currentMode][randomChord];
+            let originalVoicing;
+            if (currentMode === 'AD') {
+                // For AD mode, use the pre-defined voicing for the specific key and chord type
+                const chordTypeKey = randomChord.includes('AD1') ? 'AD1' : 'AD5';
+                originalVoicing = adChordVoicings[chordTypeKey][preferredPitch];
+                if (!originalVoicing) {
+                    console.error(`No voicing found for ${preferredPitch} ${chordTypeKey}`);
+                    return;
+                }
+            } else {
+                // For Mode II and III, use the C voicing and transpose
+                originalVoicing = chordVoicings[currentMode][randomChord];
+            }
             
             // Calculate transposition semitones (C = 0, so target pitch number is the semitones to transpose)
             const transpositionSemitones = randomPitchIndex;
             
-            // Transpose the voicing
-            const transposedVoicing = transposeChord(originalVoicing, transpositionSemitones, preferredPitch, chordType, currentMode);
+            // Transpose the voicing (only for Mode II and III, not for AD)
+            let transposedVoicing;
+            if (currentMode === 'AD') {
+                // AD mode uses pre-defined voicings, no transposition needed
+                transposedVoicing = [...originalVoicing];
+            } else {
+                // Mode II and III need transposition
+                transposedVoicing = transposeChord(originalVoicing, transpositionSemitones, preferredPitch, chordType, currentMode);
+            }
             
             // Apply intelligent octave adjustment if needed (F2 to C5 range)
             const octaveAdjustedVoicing = adjustChordOctave(transposedVoicing, preferredPitch, chordType, currentMode);
@@ -708,9 +872,9 @@ ${chordNotation}`;
             document.getElementById('chordDisplay').textContent = finalChord;
             document.getElementById('currentPitch').textContent = preferredPitch;
             
-            // Format voicing display with hand separation for Mode III
+            // Format voicing display with hand separation for Mode III and AD
             let voicingDisplay = enharmonicFixedVoicing.join(', ');
-            if (currentMode === 'III' && voicingDisplay.includes('|')) {
+            if ((currentMode === 'III' || currentMode === 'AD') && voicingDisplay.includes('|')) {
                 voicingDisplay = voicingDisplay.replace(/, \|, /g, ' | ');
                 voicingDisplay = voicingDisplay.replace(/, \| /g, ' | ');
                 voicingDisplay = voicingDisplay.replace(/\|, /g, '| ');
@@ -718,12 +882,19 @@ ${chordNotation}`;
             document.getElementById('voicingNotes').textContent = voicingDisplay;
             
             // Show octave adjustment info
-                          const overallRangeStatus = isChordInRange(enharmonicFixedVoicing) ? '✅ In range (B1-C5)' : '❌ Out of range';
-                          const leftHandRangeStatus = isLeftHandInRange(enharmonicFixedVoicing) ? '✅ Left hand in range (B1-G#3)' : '❌ Left hand out of range (B1-G#3)';
+            const overallRangeStatus = isChordInRange(enharmonicFixedVoicing) ? '✅ In range (B1-C5)' : '❌ Out of range';
+            const leftHandRangeStatus = isLeftHandInRange(enharmonicFixedVoicing) ? '✅ Left hand in range (B1-G#3)' : '❌ Left hand out of range (B1-G#3)';
+            const modeIIRangeStatus = isModeIIInRange(enharmonicFixedVoicing) ? '✅ Mode II in range (B2-B4)' : '❌ Mode II out of range (B2-B4)';
             const adjustmentInfo = window.lastOctaveAdjustment ? `<br><small style="color: #666;">${window.lastOctaveAdjustment}` : '';
             
             document.getElementById('voicingNotes').textContent = enharmonicFixedVoicing.join(', ');
-            document.getElementById('octaveStatus').innerHTML = overallRangeStatus + '<br>' + leftHandRangeStatus + adjustmentInfo;
+            
+            // Show Mode II range status with highest priority
+            if (currentMode === 'II') {
+                document.getElementById('octaveStatus').innerHTML = modeIIRangeStatus + '<br>' + overallRangeStatus + adjustmentInfo;
+            } else {
+                document.getElementById('octaveStatus').innerHTML = overallRangeStatus + '<br>' + leftHandRangeStatus + adjustmentInfo;
+            }
             
             console.log('Generated chord:', finalChord);
             console.log('Root note:', preferredPitch);
@@ -737,8 +908,9 @@ ${chordNotation}`;
             console.log('Enharmonic fixed voicing:', enharmonicFixedVoicing);
             console.log('Overall range check result:', overallRangeStatus);
             console.log('Left hand range check result:', leftHandRangeStatus);
+            console.log('Mode II range check result:', modeIIRangeStatus);
             
-                        // Debug: Show pitch calculations for each note
+            // Debug: Show pitch calculations for each note
             console.log('=== Final Pitch Analysis ===');
             enharmonicFixedVoicing.forEach(note => {
                 if (note === '|') return; // Skip separator
@@ -747,7 +919,10 @@ ${chordNotation}`;
                 console.log(`${note}: pitch_class=${pitchClass}, octave=${octave}, absolute_pitch=${absolutePitch} (${absolutePitch >= D2_PITCH && absolutePitch <= C5_PITCH ? '✅ In range' : '❌ Out of range'})`);
             });
             console.log(`Overall Range: B1 (${D2_PITCH}) to C5 (${C5_PITCH})`);
-                          console.log(`Left Hand Range: B1 (${LEFT_HAND_LOW}) to G#3 (${LEFT_HAND_HIGH})`);
+            console.log(`Left Hand Range: B1 (${LEFT_HAND_LOW}) to G#3 (${LEFT_HAND_HIGH})`);
+            if (currentMode === 'II') {
+                console.log(`Mode II Range: B2 (${MODE_II_LOW}) to B4 (${MODE_II_HIGH}) - HIGHEST PRIORITY`);
+            }
             
             // Show adjustment summary
             if (window.lastOctaveAdjustment) {
@@ -761,6 +936,11 @@ ${chordNotation}`;
 
         // Initialize the page
         updateChordList();
+        
+        // Set initial mode display - Mode II is active by default
+        document.getElementById('chordCategorySelector').style.display = 'none';
+        document.getElementById('modeIIChordCategorySelector').style.display = 'block';
+        document.getElementById('adChordCategorySelector').style.display = 'none';
 
         // Note to pitch conversion (from BPP web version)
         function noteToPitch(note) {
@@ -801,13 +981,17 @@ ${chordNotation}`;
         // Left hand (bass clef) range constraints (B1 to G#3)
         const LEFT_HAND_LOW = 11 + (1 * 12); // B1 = 23
         const LEFT_HAND_HIGH = 8 + (3 * 12); // G#3 = 44
+        
+        // Mode II specific pitch range constraints (B2 to B4) - HIGHEST PRIORITY
+        const MODE_II_LOW = 11 + (2 * 12); // B2 = 35
+        const MODE_II_HIGH = 11 + (4 * 12); // B4 = 59
 
         // Check if left hand (bass clef) part is within required range (B1 to G#3)
         function isLeftHandInRange(chord) {
             // Find the separator to identify left hand notes
             const separatorIndex = chord.indexOf('|');
             if (separatorIndex === -1) {
-                // No separator means this is not a Mode III chord, so no left hand constraint
+                // No separator means this is not a Mode III or AD chord, so no left hand constraint
                 return true;
             }
             
@@ -956,6 +1140,25 @@ ${chordNotation}`;
                 } else if (transposition4.has(rootNote)) {
                     return "Mode III, 4";
                 }
+            } else if (mode === 'AD') {
+                // Mode AD transpositions based on the actual chord voicing patterns
+                const transposition1 = new Set(["C", "F", "Bb"]);  // AD1: C, F, Bb
+                const transposition2 = new Set(["Db", "F#", "B"]); // AD1: Db, F#, B
+                const transposition3 = new Set(["D", "G", "C"]);   // AD1: D, G, C
+                const transposition4 = new Set(["Eb", "Ab", "Db"]); // AD1: Eb, Ab, Db
+                const transposition5 = new Set(["E", "A", "D"]);   // AD1: E, A, D
+                
+                if (transposition1.has(rootNote)) {
+                    return "Mode AD, 1";
+                } else if (transposition2.has(rootNote)) {
+                    return "Mode AD, 2";
+                } else if (transposition3.has(rootNote)) {
+                    return "Mode AD, 3";
+                } else if (transposition4.has(rootNote)) {
+                    return "Mode AD, 4";
+                } else if (transposition5.has(rootNote)) {
+                    return "Mode AD, 5";
+                }
             }
             
             return "Unknown transposition";
@@ -1013,7 +1216,7 @@ ${chordNotation}`;
                 else if (key === 'Bb') secondaryRoot = 'A'; // BbIII-7 right hand: A3
                 else if (key === 'B') secondaryRoot = 'Bb'; // BIII-7 right hand: Bb3
                 
-                console.log(`🎯 Secondary root for ${key}III: ${secondaryRoot}`);
+                console.log(`�� Secondary root for ${key}III: ${secondaryRoot}`);
                 
                 // Check if this is a right hand note by looking at the pitch classes that appear in right hand
                 let isRightHandNote = false;
@@ -1118,7 +1321,7 @@ ${chordNotation}`;
                 
                 // Check if this pitch class has a specific mapping for this key
                 if (modeIIIDiminishedEnharmonicMap[key] && modeIIIDiminishedEnharmonicMap[key][pitchClass]) {
-                    console.log(`🎯 ${key}IIIø7 custom mapping: pitch class ${pitchClass} -> ${modeIIIDiminishedEnharmonicMap[key][pitchClass]}`);
+                    console.log(`�� ${key}IIIø7 custom mapping: pitch class ${pitchClass} -> ${modeIIIDiminishedEnharmonicMap[key][pitchClass]}`);
                     return modeIIIDiminishedEnharmonicMap[key][pitchClass];
                 }
             }
@@ -1159,6 +1362,16 @@ ${chordNotation}`;
                     } else if (modeII13SharpKeys.has(key)) {
                         return PITCH_CLASSES_SHARP[pitchClass];
                     }
+                } else if (chordType === 'II#9') {
+                    // X II#9 chords: specific key preferences for flats vs sharps
+                    const flatKeysForIISharp9 = new Set(["C", "Db", "E", "F", "G", "Ab", "Bb"]);
+                    const sharpKeysForIISharp9 = new Set(["D", "Eb", "F#", "A", "B"]);
+                    
+                    if (flatKeysForIISharp9.has(key)) {
+                        return PITCH_CLASSES_FLAT[pitchClass];
+                    } else if (sharpKeysForIISharp9.has(key)) {
+                        return PITCH_CLASSES_SHARP[pitchClass];
+                    }
                 } else {
                     // Mode II regular chords: C is sharp key
                     const modeIIFlatKeys = new Set(["F", "Bb", "Eb", "Ab", "Db"]);
@@ -1178,6 +1391,16 @@ ${chordNotation}`;
                 if (modeIIIFlatKeys.has(key)) {
                     return PITCH_CLASSES_FLAT[pitchClass];
                 } else if (modeIIISharpKeys.has(key)) {
+                    return PITCH_CLASSES_SHARP[pitchClass];
+                }
+            } else if (mode === 'AD') {
+                // Mode AD: C is flat key (similar to Mode III)
+                const modeADFlatKeys = new Set(["C", "F", "Bb", "Eb", "Ab", "Db"]);
+                const modeADSharpKeys = new Set(["G", "D", "A", "E", "B", "F#"]);
+                
+                if (modeADFlatKeys.has(key)) {
+                    return PITCH_CLASSES_FLAT[pitchClass];
+                } else if (modeADSharpKeys.has(key)) {
                     return PITCH_CLASSES_SHARP[pitchClass];
                 }
             }
@@ -1280,6 +1503,14 @@ ${chordNotation}`;
                 let hasHighNotes = false;
                 let hasLowNotes = false;
                 let hasLeftHandRangeIssues = false;
+                let hasModeIIRangeIssues = false;
+                
+                // Check Mode II range constraint FIRST (highest priority)
+                if (currentMode === 'II') {
+                    if (!isModeIIInRange(currentChord)) {
+                        hasModeIIRangeIssues = true;
+                    }
+                }
                 
                 for (const note of currentChord) {
                     const [pitchClass, octave] = noteToPitch(note);
@@ -1294,15 +1525,15 @@ ${chordNotation}`;
                     }
                 }
                 
-                // Check left hand range constraint for Mode III chords
-                if (currentMode === 'III' && currentChord.includes('|')) {
+                // Check left hand range constraint for Mode III and AD chords
+                if ((currentMode === 'III' || currentMode === 'AD') && currentChord.includes('|')) {
                     if (!isLeftHandInRange(currentChord)) {
                         hasLeftHandRangeIssues = true;
                     }
                 }
                 
-                // If all notes are in range and left hand constraint is satisfied, we're done
-                if (!hasHighNotes && !hasLowNotes && !hasLeftHandRangeIssues) {
+                // If all notes are in range and all constraints are satisfied, we're done
+                if (!hasHighNotes && !hasLowNotes && !hasLeftHandRangeIssues && !hasModeIIRangeIssues) {
                     if (totalOctaveShift === 0) {
                         console.log('No octave adjustment needed - chord is already in range');
                         window.lastOctaveAdjustment = null;
@@ -1315,7 +1546,60 @@ ${chordNotation}`;
                 
                 // Determine octave shift based on out-of-range notes
                 let octaveShift = 0;
-                if (hasHighNotes) {
+                if (hasModeIIRangeIssues) {
+                    // Mode II range constraint has highest priority
+                    const separatorIndex = currentChord.indexOf('|');
+                    if (separatorIndex !== -1) {
+                        // For chords with hand separation, check if left hand is too high or too low
+                        const leftHandNotes = currentChord.slice(0, separatorIndex);
+                        let leftHandTooHigh = false;
+                        let leftHandTooLow = false;
+                        
+                        for (const note of leftHandNotes) {
+                            const [pitchClass, octave] = noteToPitch(note);
+                            if (pitchClass === undefined || octave === undefined) continue;
+                            
+                            const absolutePitch = pitchClass + (octave * 12);
+                            if (absolutePitch > MODE_II_HIGH) {
+                                leftHandTooHigh = true;
+                            } else if (absolutePitch < MODE_II_LOW) {
+                                leftHandTooLow = true;
+                            }
+                        }
+                        
+                        if (leftHandTooHigh) {
+                            octaveShift = -1;
+                            console.log(`Attempt ${attempts}: Mode II left hand too high, transposing down 1 octave`);
+                        } else if (leftHandTooLow) {
+                            octaveShift = 1;
+                            console.log(`Attempt ${attempts}: Mode II left hand too low, transposing up 1 octave`);
+                        }
+                    } else {
+                        // For single-staff chords, check overall range
+                        let chordTooHigh = false;
+                        let chordTooLow = false;
+                        
+                        for (const note of currentChord) {
+                            const [pitchClass, octave] = noteToPitch(note);
+                            if (pitchClass === undefined || octave === undefined) continue;
+                            
+                            const absolutePitch = pitchClass + (octave * 12);
+                            if (absolutePitch > MODE_II_HIGH) {
+                                chordTooHigh = true;
+                            } else if (absolutePitch < MODE_II_LOW) {
+                                chordTooLow = true;
+                            }
+                        }
+                        
+                        if (chordTooHigh) {
+                            octaveShift = -1;
+                            console.log(`Attempt ${attempts}: Mode II chord too high, transposing down 1 octave`);
+                        } else if (chordTooLow) {
+                            octaveShift = 1;
+                            console.log(`Attempt ${attempts}: Mode II chord too low, transposing up 1 octave`);
+                        }
+                    }
+                } else if (hasHighNotes) {
                     octaveShift = -1;
                     console.log(`Attempt ${attempts}: Chord has high notes, transposing down 1 octave`);
                 } else if (hasLowNotes) {
@@ -1373,6 +1657,29 @@ ${chordNotation}`;
             console.warn(`Warning: Exceeded maximum octave adjustment attempts (${maxAttempts}). Returning best result.`);
             window.lastOctaveAdjustment = `⚠️ Limited adjustment: total shift = ${totalOctaveShift} octave(s)`;
             return currentChord;
+        }
+
+        // Check if Mode II chord is within required range (B2 to B4) - HIGHEST PRIORITY
+        function isModeIIInRange(chord) {
+            if (currentMode !== 'II') {
+                // Not Mode II, so no constraint
+                return true;
+            }
+            
+            console.log('Checking Mode II range constraint (B2-B4) for:', chord);
+            for (const note of chord) {
+                const [pitchClass, octave] = noteToPitch(note);
+                if (pitchClass === undefined || octave === undefined) continue;
+                
+                const absolutePitch = pitchClass + (octave * 12);
+                console.log(`Mode II note ${note}: pitch_class=${pitchClass}, octave=${octave}, absolute_pitch=${absolutePitch}`);
+                
+                if (absolutePitch < MODE_II_LOW || absolutePitch > MODE_II_HIGH) {
+                    console.log(`Mode II note ${note} out of range: ${absolutePitch} not in [${MODE_II_LOW}, ${MODE_II_HIGH}] (B2-B4)`);
+                    return false;
+                }
+            }
+            return true;
         }
     </script>
 </body>
