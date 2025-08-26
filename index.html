@@ -134,6 +134,19 @@
             box-shadow: 0 15px 30px rgba(79, 172, 254, 0.4);
         }
 
+        .neighbors-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%) !important;
+        }
+
+        .neighbors-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(255, 107, 107, 0.4);
+        }
+
+        .neighbors-btn.active {
+            background: linear-gradient(135deg, #ff4757 0%, #c44569 100%) !important;
+        }
+
         .staff-container {
             background: white;
             border-radius: 10px;
@@ -233,6 +246,7 @@
         </div>
 
         <button class="generate-btn" onclick="generateChord()">Generate Chord</button>
+        <button class="generate-btn neighbors-btn" onclick="toggleNeighbors()" style="margin-left: 20px;">Neighbors</button>
 
         <div class="staff-container">
             <div id="staff"></div>
@@ -360,6 +374,50 @@
             'AD1',
             'AD5'
         ];
+
+        // Mode II neighbor arrays for each transposition
+        const modeIINeighbors = {
+            1: {
+                '#11': ['CII#11', 'AII13', 'EbII#11', 'CII13', 'F#II#11', 'EbII13', 'AII#11', 'F#II13'],
+                '6': ['CII6', 'F#II#9', 'EbII6', 'AII#9', 'F#II6', 'CII#9', 'AII6', 'EbII#9']
+            },
+            2: {
+                '#11': ['DbII#11', 'BbII13', 'EII#11', 'DbII13', 'GII#11', 'EII13', 'BbII#11', 'GII13'],
+                '6': ['DbII6', 'GII#9', 'EII6', 'BbII#9', 'GII6', 'DbII#9', 'BbII6', 'EII#9']
+            },
+            3: {
+                '#11': ['DII#11', 'BII13', 'FII#11', 'DII13', 'AbII#11', 'FII13', 'BII#11', 'AbII13'],
+                '6': ['DII6', 'AbII#9', 'FII6', 'BII#9', 'AbII6', 'DII#9', 'BII6', 'FII#9']
+            }
+        };
+
+        // Mode III neighbor arrays for each transposition
+        const modeIIINeighbors = {
+            1: {
+                'series1': ['CIII-7', 'EIII7', 'CIIIø7', 'EIII-7', 'AbIII7', 'EIIIø7', 'AbIII-7', 'CIII7', 'AbIIIø7'],
+                'series2': ['CIII-9', 'EIII7/Δ7', 'CIIIø7b13', 'EIII-9', 'AbIII7/Δ7', 'EIIIø7b13', 'AbIII-9', 'CIII7/Δ7', 'AbIIIø7b13'],
+                'series3': ['CIII-9(#11)', 'EIII7/Δ7/#9', 'CIIIø7b13(♮3)', 'EIII-9(#11)', 'AbIII7/Δ7/#9', 'EIIIø7b13(♮3)', 'AbIII-9(#11)', 'CIII7/Δ7/#9', 'AbIIIø7b13(♮3)']
+            },
+            2: {
+                'series1': ['DbIII-7', 'FIII7', 'DbIIIø7', 'FIII-7', 'AIII7', 'FIIIø7', 'AIII-7', 'DbIII7', 'AIIIø7'],
+                'series2': ['DbIII-9', 'FIII7/Δ7', 'DbIIIø7b13', 'FIII-9', 'AIII7/Δ7', 'FIIIø7b13', 'AIII-9', 'DbIII7/Δ7', 'AIIIø7b13'],
+                'series3': ['DbIII-9(#11)', 'FIII7/Δ7/#9', 'DbIIIø7b13(♮3)', 'FIII-9(#11)', 'AIII7/Δ7/#9', 'FIIIø7b13(♮3)', 'AIII-9(#11)', 'DbIII7/Δ7/#9', 'AIIIø7b13(♮3)']
+            },
+            3: {
+                'series1': ['DIII-7', 'F#III7', 'DIIIø7', 'F#III-7', 'BbIII7', 'F#IIIø7', 'BbIII-7', 'DIII7', 'BbIIIø7'],
+                'series2': ['DIII-9', 'F#III7/Δ7', 'DIIIø7b13', 'F#III-9', 'BbIII7/Δ7', 'F#IIIø7b13', 'BbIII-9', 'DIII7/Δ7', 'BbIIIø7b13'],
+                'series3': ['DIII-9(#11)', 'F#III7/Δ7/#9', 'DIIIø7b13(♮3)', 'F#III-9(#11)', 'BbIII7/Δ7/#9', 'F#IIIø7b13(♮3)', 'BbIII-9(#11)', 'DIII7/Δ7/#9', 'BbIIIø7b13(♮3)']
+            },
+            4: {
+                'series1': ['EbIII-7', 'GIII7', 'EbIIIø7', 'GIII-7', 'BIII7', 'GIIIø7', 'BIII-7', 'EbIII7', 'BIIIø7'],
+                'series2': ['EbIII-9', 'GIII7/Δ7', 'EbIIIø7b13', 'GIII-9', 'BIII7/Δ7', 'GIIIø7b13', 'BIII-9', 'EbIII7/Δ7', 'BIIIø7b13'],
+                'series3': ['EbIII-9(#11)', 'GIII7/Δ7/#9', 'EbIIIø7b13(♮3)', 'GIII-9(#11)', 'BIII7/Δ7/#9', 'GIIIø7b13(♮3)', 'BIII-9(#11)', 'EbIII7/Δ7/#9', 'BbIIIø7b13(♮3)']
+            }
+        };
+
+        // Neighbors state management
+        let neighborsDisplayed = false;
+        let currentChordWithNeighbors = null;
 
         function transposeNote(note, semitones, key, chordType = null, mode = null) {
             const pitch = note.slice(0, -1);
@@ -872,6 +930,20 @@ ${chordNotation}`;
             document.getElementById('chordDisplay').textContent = finalChord;
             document.getElementById('currentPitch').textContent = preferredPitch;
             
+            // Reset neighbors state when generating a new chord
+            neighborsDisplayed = false;
+            currentChordWithNeighbors = null;
+            
+            // Reset neighbors button to "Neighbors"
+            const neighborsBtn = document.querySelector('.neighbors-btn');
+            if (neighborsBtn) {
+                neighborsBtn.textContent = 'Neighbors';
+                neighborsBtn.classList.remove('active');
+            }
+            
+            // Debug: Log the chord name for neighbors functionality
+            console.log('Generated chord name for neighbors:', finalChord);
+            
             // Format voicing display with hand separation for Mode III and AD
             let voicingDisplay = enharmonicFixedVoicing.join(', ');
             if ((currentMode === 'III' || currentMode === 'AD') && voicingDisplay.includes('|')) {
@@ -941,6 +1013,30 @@ ${chordNotation}`;
         document.getElementById('chordCategorySelector').style.display = 'none';
         document.getElementById('modeIIChordCategorySelector').style.display = 'block';
         document.getElementById('adChordCategorySelector').style.display = 'none';
+        
+        // Debug: Test neighbor arrays
+        console.log('Mode II neighbor arrays loaded:');
+        console.log('Transposition 1:', modeIINeighbors[1]);
+        console.log('Transposition 2:', modeIINeighbors[2]);
+        console.log('Transposition 3:', modeIINeighbors[3]);
+        
+        console.log('Mode III neighbor arrays loaded:');
+        console.log('Transposition 1:', modeIIINeighbors[1]);
+        console.log('Transposition 2:', modeIIINeighbors[2]);
+        console.log('Transposition 3:', modeIIINeighbors[3]);
+        console.log('Transposition 4:', modeIIINeighbors[4]);
+        
+        // Debug: Test specific chord lookups
+        console.log('Testing AbIIIø7b13(♮3) lookup:');
+        console.log('Key extraction:', 'AbIIIø7b13(♮3)'.match(/^([A-Z][#b]?)/));
+        console.log('Transposition 1 series3 array:', modeIIINeighbors[1]['series3']);
+        console.log('Contains AbIIIø7b13(♮3):', modeIIINeighbors[1]['series3'].includes('AbIIIø7b13(♮3)'));
+        
+        // Test FIII-9(#11) lookup
+        console.log('Testing FIII-9(#11) lookup:');
+        console.log('Key extraction:', 'FIII-9(#11)'.match(/^([A-Z][#b]?)/));
+        console.log('Transposition 2 series3 array:', modeIIINeighbors[2]['series3']);
+        console.log('Contains FIII-9(#11):', modeIIINeighbors[2]['series3'].includes('FIII-9(#11)'));
 
         // Note to pitch conversion (from BPP web version)
         function noteToPitch(note) {
@@ -1680,6 +1776,752 @@ ${chordNotation}`;
                 }
             }
             return true;
+        }
+
+        // Find neighbors for Mode II chords
+        function findModeIINeighbors(chordName) {
+            if (currentMode !== 'II') return null;
+            
+            console.log('Finding neighbors for chord:', chordName);
+            
+            // Extract the key from the chord name (everything before "II")
+            const keyMatch = chordName.match(/^([A-Z][#b]?)/);
+            if (!keyMatch) {
+                console.log('Could not extract key from chord name:', chordName);
+                return null;
+            }
+            const key = keyMatch[1];
+            console.log('Extracted key:', key);
+            
+            // Handle special case for F# (sharp keys)
+            let actualKey = key;
+            if (key === 'F' && chordName.startsWith('F#')) {
+                actualKey = 'F#';
+            } else if (key === 'C' && chordName.startsWith('C#')) {
+                actualKey = 'C#';
+            } else if (key === 'G' && chordName.startsWith('G#')) {
+                actualKey = 'G#';
+            } else if (key === 'D' && chordName.startsWith('D#')) {
+                actualKey = 'D#';
+            } else if (key === 'A' && chordName.startsWith('A#')) {
+                actualKey = 'A#';
+            } else if (key === 'E' && chordName.startsWith('E#')) {
+                actualKey = 'E#';
+            } else if (key === 'B' && chordName.startsWith('B#')) {
+                actualKey = 'B#';
+            }
+            console.log('Actual key after sharp handling:', actualKey);
+            
+            // Determine which transposition this chord belongs to
+            let transposition = null;
+            if (['C', 'Eb', 'F#', 'A'].includes(actualKey)) {
+                transposition = 1;
+            } else if (['Db', 'E', 'G', 'Bb'].includes(actualKey)) {
+                transposition = 2;
+            } else if (['D', 'F', 'Ab', 'B'].includes(actualKey)) {
+                transposition = 3;
+            }
+            
+            console.log('Determined transposition:', transposition);
+            if (!transposition) return null;
+            
+            // Determine which series this chord belongs to
+            let series = null;
+            if (chordName.includes('#11') || chordName.includes('13')) {
+                series = '#11';
+            } else if (chordName.includes('6') || chordName.includes('#9')) {
+                series = '6';
+            }
+            
+            console.log('Determined series:', series);
+            if (!series) return null;
+            
+            // Find the chord in the array
+            const chordArray = modeIINeighbors[transposition][series];
+            console.log('Chord array:', chordArray);
+            console.log('Looking for chord:', chordName);
+            console.log('Available chords in array:', chordArray);
+            const chordIndex = chordArray.indexOf(chordName);
+            console.log('Chord index:', chordIndex);
+            
+            if (chordIndex === -1) return null;
+            
+            // Get left and right neighbors (with wraparound)
+            const leftIndex = (chordIndex - 1 + chordArray.length) % chordArray.length;
+            const rightIndex = (chordIndex + 1) % chordArray.length;
+            
+            console.log(`Chord ${chordName} at index ${chordIndex}`);
+            console.log(`Left neighbor: ${chordArray[leftIndex]} (index ${leftIndex})`);
+            console.log(`Right neighbor: ${chordArray[rightIndex]} (index ${rightIndex})`);
+            
+            const result = {
+                left: chordArray[leftIndex],
+                current: chordName,
+                right: chordArray[rightIndex],
+                transposition: transposition,
+                series: series
+            };
+            
+            console.log('Found neighbors:', result);
+            return result;
+        }
+
+        // Find neighbors for Mode III chords
+        function findModeIIINeighbors(chordName) {
+            if (currentMode !== 'III') return null;
+            
+            console.log('Finding Mode III neighbors for chord:', chordName);
+            
+            // Extract the key from the chord name (everything before "III")
+            const keyMatch = chordName.match(/^([A-Z][#b]?)/);
+            if (!keyMatch) {
+                console.log('Could not extract key from chord name:', chordName);
+                return null;
+            }
+            const key = keyMatch[1];
+            console.log('Extracted key:', key);
+            
+            // Handle special case for sharp keys
+            let actualKey = key;
+            if (key === 'F' && chordName.startsWith('F#')) {
+                actualKey = 'F#';
+            } else if (key === 'C' && chordName.startsWith('C#')) {
+                actualKey = 'C#';
+            } else if (key === 'G' && chordName.startsWith('G#')) {
+                actualKey = 'G#';
+            } else if (key === 'D' && chordName.startsWith('D#')) {
+                actualKey = 'D#';
+            } else if (key === 'A' && chordName.startsWith('A#')) {
+                actualKey = 'A#';
+            } else if (key === 'E' && chordName.startsWith('E#')) {
+                actualKey = 'E#';
+            } else if (key === 'B' && chordName.startsWith('B#')) {
+                actualKey = 'B#';
+            }
+            console.log('Actual key after sharp handling:', actualKey);
+            
+            // Determine which transposition this chord belongs to
+            let transposition = null;
+            if (['C', 'E', 'Ab'].includes(actualKey)) {
+                transposition = 1;
+            } else if (['Db', 'F', 'A'].includes(actualKey)) {
+                transposition = 2;
+            } else if (['D', 'F#', 'Bb'].includes(actualKey)) {
+                transposition = 3;
+            } else if (['Eb', 'G', 'B'].includes(actualKey)) {
+                transposition = 4;
+            }
+            
+            console.log('Determined transposition:', transposition);
+            if (!transposition) return null;
+            
+            // Determine which series this chord belongs to
+            // For Mode III, we need to check all three series to find which one contains this chord
+            let series = null;
+            for (let s = 1; s <= 3; s++) {
+                const seriesKey = `series${s}`;
+                if (modeIIINeighbors[transposition][seriesKey].includes(chordName)) {
+                    series = seriesKey;
+                    break;
+                }
+            }
+            
+            console.log('Determined series:', series);
+            if (!series) return null;
+            
+            // Find the chord in the array
+            const chordArray = modeIIINeighbors[transposition][series];
+            console.log('Chord array:', chordArray);
+            console.log('Looking for chord:', chordName);
+            console.log('Available chords in array:', chordArray);
+            const chordIndex = chordArray.indexOf(chordName);
+            console.log('Chord index:', chordIndex);
+            
+            if (chordIndex === -1) return null;
+            
+            // Get left and right neighbors (with wraparound)
+            const leftIndex = (chordIndex - 1 + chordArray.length) % chordArray.length;
+            const rightIndex = (chordIndex + 1) % chordArray.length;
+            
+            console.log(`Chord ${chordName} at index ${chordIndex}`);
+            console.log(`Left neighbor: ${chordArray[leftIndex]} (index ${leftIndex})`);
+            console.log(`Right neighbor: ${chordArray[rightIndex]} (index ${rightIndex})`);
+            
+            const result = {
+                left: chordArray[leftIndex],
+                current: chordName,
+                right: chordArray[rightIndex],
+                transposition: transposition,
+                series: series
+            };
+            
+            console.log('Found neighbors:', result);
+            return result;
+        }
+
+        // Toggle neighbors display
+        function toggleNeighbors() {
+            if (currentMode !== 'II' && currentMode !== 'III') {
+                alert('Neighbors feature is only available for Mode II and Mode III');
+                return;
+            }
+            
+            if (!neighborsDisplayed) {
+                // Show neighbors
+                const currentChord = document.getElementById('chordDisplay').textContent;
+                if (currentChord === 'Click "Generate Chord" to start') {
+                    alert('Please generate a chord first');
+                    return;
+                }
+                
+                let neighbors;
+                if (currentMode === 'II') {
+                    neighbors = findModeIINeighbors(currentChord);
+                } else if (currentMode === 'III') {
+                    neighbors = findModeIIINeighbors(currentChord);
+                }
+                
+                if (!neighbors) {
+                    alert('Could not find neighbors for this chord');
+                    return;
+                }
+                
+                // Store current state
+                currentChordWithNeighbors = neighbors;
+                neighborsDisplayed = true;
+                
+                // Update display to show neighbors
+                document.getElementById('chordDisplay').textContent = `${neighbors.left} | ${neighbors.current} | ${neighbors.right}`;
+                
+                // Generate voicings for all three chords
+                const leftVoicing = generateChordVoicing(neighbors.left);
+                const currentVoicing = generateChordVoicing(neighbors.current);
+                const rightVoicing = generateChordVoicing(neighbors.right);
+                
+                console.log('=== ORIGINAL VOICINGS BEFORE SMOOTHING ===');
+                console.log('Left chord:', neighbors.left, 'Voicing:', leftVoicing);
+                console.log('Current chord:', neighbors.current, 'Voicing:', currentVoicing);
+                console.log('Right chord:', neighbors.right, 'Voicing:', rightVoicing);
+                
+                // Apply voice leading improvement
+                const improvedVoicings = improveNeighborVoiceLeading(leftVoicing, currentVoicing, rightVoicing);
+                
+                // Display all three voicings on the same staff
+                drawStaffWithNeighbors(leftVoicing, currentVoicing, rightVoicing);
+                
+                // Update voicing info with improved voicings
+                document.getElementById('voicingNotes').innerHTML = `
+                    <strong>Left:</strong> ${improvedVoicings.left.join(', ')}<br>
+                    <strong>Current:</strong> ${improvedVoicings.current.join(', ')}<br>
+                    <strong>Right:</strong> ${improvedVoicings.right.join(', ')}
+                `;
+                
+                // Update button text and styling
+                event.target.textContent = 'Hide Neighbors';
+                event.target.classList.add('active');
+                
+            } else {
+                // Hide neighbors
+                neighborsDisplayed = false;
+                
+                // Restore original chord display
+                if (currentChordWithNeighbors) {
+                    document.getElementById('chordDisplay').textContent = currentChordWithNeighbors.current;
+                    document.getElementById('voicingNotes').textContent = generateChordVoicing(currentChordWithNeighbors.current).join(', ');
+                    drawStaff(generateChordVoicing(currentChordWithNeighbors.current));
+                    currentChordWithNeighbors = null;
+                }
+                
+                // Update button text and styling
+                event.target.textContent = 'Neighbors';
+                event.target.classList.remove('active');
+            }
+        }
+
+        // Generate chord voicing for a given chord name
+        function generateChordVoicing(chordName) {
+            console.log('Generating voicing for chord:', chordName);
+            
+            // Extract the key from the chord name (everything before "II" or "III")
+            const keyMatch = chordName.match(/^([A-Z][#b]?)/);
+            if (!keyMatch) {
+                console.log('Could not extract key from chord name:', chordName);
+                return [];
+            }
+            const key = keyMatch[1];
+            
+            // Handle special case for sharp keys
+            let actualKey = key;
+            if (key === 'F' && chordName.startsWith('F#')) {
+                actualKey = 'F#';
+            } else if (key === 'C' && chordName.startsWith('C#')) {
+                actualKey = 'C#';
+            } else if (key === 'G' && chordName.startsWith('G#')) {
+                actualKey = 'G#';
+            } else if (key === 'D' && chordName.startsWith('D#')) {
+                actualKey = 'D#';
+            } else if (key === 'A' && chordName.startsWith('A#')) {
+                actualKey = 'A#';
+            } else if (key === 'E' && chordName.startsWith('E#')) {
+                actualKey = 'E#';
+            } else if (key === 'B' && chordName.startsWith('B#')) {
+                actualKey = 'B#';
+            }
+            
+            console.log('Extracted key for voicing:', actualKey);
+            
+            // Determine if this is Mode II or Mode III
+            const isModeIII = chordName.includes('III');
+            const mode = isModeIII ? 'III' : 'II';
+            
+            // Get the original voicing in C
+            let originalVoicing;
+            if (isModeIII) {
+                // Mode III voicings - need to check in order of specificity
+                if (chordName.includes('ø7b13(♮3)')) {
+                    originalVoicing = chordVoicings['III']['CIIIø7b13(♮3)'];
+                } else if (chordName.includes('ø7b13')) {
+                    originalVoicing = chordVoicings['III']['CIIIø7b13'];
+                } else if (chordName.includes('ø7')) {
+                    originalVoicing = chordVoicings['III']['CIIIø7'];
+                } else if (chordName.includes('-9(#11)')) {
+                    originalVoicing = chordVoicings['III']['CIII-9(#11)'];
+                } else if (chordName.includes('-9')) {
+                    originalVoicing = chordVoicings['III']['CIII-9'];
+                } else if (chordName.includes('-7')) {
+                    originalVoicing = chordVoicings['III']['CIII-7'];
+                } else if (chordName.includes('7/Δ7/#9')) {
+                    originalVoicing = chordVoicings['III']['CIII7/Δ7/#9'];
+                } else if (chordName.includes('7/Δ7')) {
+                    originalVoicing = chordVoicings['III']['CIII7/Δ7'];
+                } else if (chordName.includes('7') && !chordName.includes('ø7')) {
+                    originalVoicing = chordVoicings['III']['CIII7'];
+                }
+            } else {
+                // Mode II voicings
+                if (chordName.includes('6')) {
+                    originalVoicing = chordVoicings['II']['CII6'];
+                } else if (chordName.includes('#11')) {
+                    originalVoicing = chordVoicings['II']['CII#11'];
+                } else if (chordName.includes('13')) {
+                    originalVoicing = chordVoicings['II']['CII13'];
+                } else if (chordName.includes('#9')) {
+                    originalVoicing = chordVoicings['II']['CII#9'];
+                }
+            }
+            
+            console.log('Original C voicing for', chordName, ':', originalVoicing);
+            
+            if (!originalVoicing) {
+                console.log('No original voicing found for chord type');
+                return [];
+            }
+            
+            // Calculate transposition semitones
+            const transpositionSemitones = pitchClasses[actualKey];
+            console.log('Transposition semitones:', transpositionSemitones);
+            
+            if (transpositionSemitones === undefined) {
+                console.log('Invalid key for transposition:', actualKey);
+                return [];
+            }
+            
+            // Determine chord type for proper note representation
+            let chordTypeForRep = null;
+            if (isModeIII) {
+                if (chordName.includes('-7') || chordName.includes('-9') || chordName.includes('-9(#11)')) {
+                    chordTypeForRep = 'minor-dominant';
+                } else if (chordName.includes('7') && !chordName.includes('ø7')) {
+                    chordTypeForRep = 'major-dominant';
+                } else if (chordName.includes('ø7')) {
+                    chordTypeForRep = 'diminished';
+                }
+            } else {
+                if (chordName.includes('13')) {
+                    chordTypeForRep = '13';
+                } else if (chordName.includes('#11')) {
+                    chordTypeForRep = '#11';
+                } else if (chordName.includes('#9')) {
+                    chordTypeForRep = '#9';
+                } else if (chordName.includes('6')) {
+                    chordTypeForRep = '6';
+                }
+            }
+            
+            // Transpose the voicing
+            console.log('=== TRANSPOSITION DEBUG ===');
+            console.log('Original voicing:', originalVoicing);
+            console.log('Transposition semitones:', transpositionSemitones);
+            console.log('Target key:', actualKey);
+            console.log('Chord type:', chordTypeForRep);
+            console.log('Mode:', mode);
+            
+            const transposedVoicing = transposeChord(originalVoicing, transpositionSemitones, actualKey, chordTypeForRep, mode);
+            console.log('Transposed voicing:', transposedVoicing);
+            
+            // Apply octave adjustment and enharmonic fixes
+            console.log('=== OCTAVE ADJUSTMENT DEBUG ===');
+            console.log('Before octave adjustment:', transposedVoicing);
+            
+            const octaveAdjustedVoicing = adjustChordOctave(transposedVoicing, actualKey, chordTypeForRep, mode);
+            console.log('After octave adjustment:', octaveAdjustedVoicing);
+            
+            const enharmonicFixedVoicing = fixEnharmonicConflictsEnhanced(octaveAdjustedVoicing, actualKey, chordTypeForRep, mode);
+            console.log('After enharmonic fixes:', enharmonicFixedVoicing);
+            
+            console.log('Final voicing for', chordName, ':', enharmonicFixedVoicing);
+            return enharmonicFixedVoicing;
+        }
+
+        // Smooth bass line for neighbor chords
+        function smoothBassLine(leftVoicing, currentVoicing, rightVoicing) {
+            console.log('Smoothing bass line for neighbor chords');
+            console.log('Original voicings:');
+            console.log('Left:', leftVoicing);
+            console.log('Current:', currentVoicing);
+            console.log('Right:', rightVoicing);
+            
+            // Get the lowest note (bass) from each voicing
+            const getBassNote = (voicing) => {
+                let lowestNote = null;
+                let lowestPitch = Infinity;
+                
+                for (const note of voicing) {
+                    const [pitchClass, octave] = noteToPitch(note);
+                    if (pitchClass !== undefined && octave !== undefined) {
+                        const absolutePitch = pitchClass + (octave * 12);
+                        if (absolutePitch < lowestPitch) {
+                            lowestPitch = absolutePitch;
+                            lowestNote = note;
+                        }
+                    }
+                }
+                return lowestNote;
+            };
+            
+            const leftBass = getBassNote(leftVoicing);
+            const currentBass = getBassNote(currentVoicing);
+            const rightBass = getBassNote(rightVoicing);
+            
+            console.log('Original bass notes:', leftBass, currentBass, rightBass);
+            
+            // Get pitch values for comparison
+            const getPitchValue = (note) => {
+                const [pitchClass, octave] = noteToPitch(note);
+                return pitchClass !== undefined && octave !== undefined ? pitchClass + (octave * 12) : 0;
+            };
+            
+            const leftPitch = getPitchValue(leftBass);
+            const currentPitch = getPitchValue(currentBass);
+            const rightPitch = getPitchValue(rightBass);
+            
+            console.log('Original bass pitches:', leftPitch, currentPitch, rightPitch);
+            
+            // Calculate ideal stepwise progression
+            // Start with current bass as reference, adjust left and right to create smooth line
+            let adjustedLeftVoicing = [...leftVoicing];
+            let adjustedRightVoicing = [...rightVoicing];
+            
+            // For Mode II, we need to preserve the chord roots
+            // Instead of transposing the entire chord, we should only adjust octaves
+            // to create a smooth bass line while keeping the root notes intact
+            
+            // Get the root notes for each chord
+            const getRootNote = (chordName) => {
+                const keyMatch = chordName.match(/^([A-Z][#b]?)/);
+                return keyMatch ? keyMatch[1] : null;
+            };
+            
+            const leftRoot = getRootNote(currentChordWithNeighbors.left);
+            const currentRoot = getRootNote(currentChordWithNeighbors.current);
+            const rightRoot = getRootNote(currentChordWithNeighbors.right);
+            
+            console.log('Chord roots:', leftRoot, currentRoot, rightRoot);
+            
+            // Instead of transposing, we'll adjust octaves to create smooth bass line
+            // while preserving the root notes
+            const leftRootPitch = pitchClasses[leftRoot];
+            const currentRootPitch = pitchClasses[currentRoot];
+            const rightRootPitch = pitchClasses[rightRoot];
+            
+            console.log('Root pitches:', leftRootPitch, currentRootPitch, rightRootPitch);
+            
+            // Calculate octave adjustments to create smooth bass line
+            // We want the bass notes to be stepwise while preserving the root identity
+            
+            // Extract keys from chord names for proper note representation
+            const extractKeyFromChordName = (chordName) => {
+                const keyMatch = chordName.match(/^([A-Z][#b]?)/);
+                if (!keyMatch) return 'C';
+                const key = keyMatch[1];
+                
+                // Handle special case for sharp keys
+                if (key === 'F' && chordName.startsWith('F#')) {
+                    return 'F#';
+                } else if (key === 'C' && chordName.startsWith('C#')) {
+                    return 'C#';
+                } else if (key === 'G' && chordName.startsWith('G#')) {
+                    return 'G#';
+                } else if (key === 'D' && chordName.startsWith('D#')) {
+                    return 'D#';
+                } else if (key === 'A' && chordName.startsWith('A#')) {
+                    return 'A#';
+                } else if (key === 'E' && chordName.startsWith('E#')) {
+                    return 'E#';
+                } else if (key === 'B' && chordName.startsWith('B#')) {
+                    return 'B#';
+                }
+                return key;
+            };
+            
+            // Get the chord names from the current neighbors state
+            const leftChordKey = extractKeyFromChordName(currentChordWithNeighbors.left);
+            const rightChordKey = extractKeyFromChordName(currentChordWithNeighbors.right);
+            
+            console.log('Using keys for note representation:', leftChordKey, rightChordKey);
+            
+            // Transpose entire left voicing
+            adjustedLeftVoicing = leftVoicing.map(note => {
+                const [pitchClass, octave] = noteToPitch(note);
+                if (pitchClass === undefined || octave === undefined) return note;
+                
+                const newPitch = ((pitchClass + leftTransposition) % 12 + 12) % 12;
+                const newOctave = octave + Math.floor((pitchClass + leftTransposition) / 12);
+                
+                // Use key-aware note representation with correct key and chord type
+                const leftChordType = currentChordWithNeighbors.left.includes('13') ? '13' : 
+                                    currentChordWithNeighbors.left.includes('#11') ? '#11' : 
+                                    currentChordWithNeighbors.left.includes('#9') ? '#9' : '6';
+                const pitchName = getNoteRepresentation(newPitch, leftChordKey, leftChordType, 'II');
+                return `${pitchName}${newOctave}`;
+            });
+            
+            // Calculate how much to transpose right voicing
+            const rightTargetPitch = currentPitch + 2; // Aim for whole step above
+            const rightTransposition = rightTargetPitch - rightPitch;
+            
+            // Transpose entire right voicing
+            adjustedRightVoicing = rightVoicing.map(note => {
+                const [pitchClass, octave] = noteToPitch(note);
+                if (pitchClass === undefined || octave === undefined) return note;
+                
+                const newPitch = ((pitchClass + rightTransposition) % 12 + 12) % 12;
+                const newOctave = octave + Math.floor((pitchClass + rightTransposition) / 12);
+                
+                // Use key-aware note representation with correct key and chord type
+                const rightChordType = currentChordWithNeighbors.right.includes('13') ? '13' : 
+                                     currentChordWithNeighbors.right.includes('#11') ? '#11' : 
+                                     currentChordWithNeighbors.right.includes('#9') ? '#9' : '6';
+                const pitchName = getNoteRepresentation(newPitch, rightChordKey, rightChordType, 'II');
+                return `${pitchName}${newOctave}`;
+            });
+            
+            console.log('Transposition amounts:', leftTransposition, 'for left,', rightTransposition, 'for right');
+            console.log('Adjusted voicings:');
+            console.log('Left:', adjustedLeftVoicing);
+            console.log('Current:', currentVoicing);
+            console.log('Right:', adjustedRightVoicing);
+            
+            return {
+                left: adjustedLeftVoicing,
+                current: currentVoicing,
+                right: adjustedRightVoicing
+            };
+        }
+
+        // Improve voice leading for neighbor chords by adjusting octaves
+        function improveNeighborVoiceLeading(leftVoicing, currentVoicing, rightVoicing) {
+            console.log('Improving voice leading for neighbor chords');
+            console.log('Original voicings:');
+            console.log('Left:', leftVoicing);
+            console.log('Current:', currentVoicing);
+            console.log('Right:', rightVoicing);
+            
+            // Get the average pitch of each voicing
+            const getAveragePitch = (voicing) => {
+                let totalPitch = 0;
+                let count = 0;
+                
+                for (const note of voicing) {
+                    const [pitchClass, octave] = noteToPitch(note);
+                    if (pitchClass !== undefined && octave !== undefined) {
+                        const absolutePitch = pitchClass + (octave * 12);
+                        totalPitch += absolutePitch;
+                        count++;
+                    }
+                }
+                
+                return count > 0 ? totalPitch / count : 0;
+            };
+            
+            const leftAvgPitch = getAveragePitch(leftVoicing);
+            const currentAvgPitch = getAveragePitch(currentVoicing);
+            const rightAvgPitch = getAveragePitch(rightVoicing);
+            
+            console.log('Average pitches:', leftAvgPitch, currentAvgPitch, rightAvgPitch);
+            
+            // Calculate target average pitch (use current as reference)
+            const targetAvgPitch = currentAvgPitch;
+            const tolerance = 6; // Allow some variation
+            
+            let adjustedLeftVoicing = [...leftVoicing];
+            let adjustedRightVoicing = [...rightVoicing];
+            
+            // Adjust left voicing if it's too far from current
+            if (Math.abs(leftAvgPitch - targetAvgPitch) > tolerance) {
+                const leftShift = Math.round((targetAvgPitch - leftAvgPitch) / 12) * 12;
+                if (Math.abs(leftShift) >= 12) {
+                    console.log('Adjusting left voicing by', leftShift / 12, 'octave(s)');
+                    adjustedLeftVoicing = leftVoicing.map(note => {
+                        const [pitchClass, octave] = noteToPitch(note);
+                        if (pitchClass === undefined || octave === undefined) return note;
+                        
+                        const newOctave = octave + (leftShift / 12);
+                        const pitchName = note.slice(0, -1);
+                        return `${pitchName}${newOctave}`;
+                    });
+                }
+            }
+            
+            // Adjust right voicing if it's too far from current
+            if (Math.abs(rightAvgPitch - targetAvgPitch) > tolerance) {
+                const rightShift = Math.round((targetAvgPitch - rightAvgPitch) / 12) * 12;
+                if (Math.abs(rightShift) >= 12) {
+                    console.log('Adjusting right voicing by', rightShift / 12, 'octave(s)');
+                    adjustedRightVoicing = rightVoicing.map(note => {
+                        const [pitchClass, octave] = noteToPitch(note);
+                        if (pitchClass === undefined || octave === undefined) return note;
+                        
+                        const newOctave = octave + (rightShift / 12);
+                        const pitchName = note.slice(0, -1);
+                        return `${pitchName}${newOctave}`;
+                    });
+                }
+            }
+            
+            console.log('Adjusted voicings:');
+            console.log('Left:', adjustedLeftVoicing);
+            console.log('Current:', currentVoicing);
+            console.log('Right:', adjustedRightVoicing);
+            
+            return {
+                left: adjustedLeftVoicing,
+                current: currentVoicing,
+                right: adjustedRightVoicing
+            };
+        }
+
+        // Draw staff with three chords side by side
+        function drawStaffWithNeighbors(leftVoicing, currentVoicing, rightVoicing) {
+            const staffDiv = document.getElementById('staff');
+            staffDiv.innerHTML = '';
+            
+            // Apply voice leading improvement
+            const improvedVoicings = improveNeighborVoiceLeading(leftVoicing, currentVoicing, rightVoicing);
+            
+            // Check if this is a Mode III chord with hand separation
+            const hasHandSeparation = currentVoicing.includes('|');
+            
+            if (hasHandSeparation && currentMode === 'III') {
+                // Mode III: Use two staves (bass and treble) for each chord
+                console.log('🎼 Mode III neighbors with hand separation detected');
+                
+                // Split each voicing into left and right hand
+                const leftLeftHand = improvedVoicings.left.slice(0, improvedVoicings.left.indexOf('|'));
+                const leftRightHand = improvedVoicings.left.slice(improvedVoicings.left.indexOf('|') + 1);
+                const currentLeftHand = improvedVoicings.current.slice(0, improvedVoicings.current.indexOf('|'));
+                const currentRightHand = improvedVoicings.current.slice(improvedVoicings.current.indexOf('|') + 1);
+                const rightLeftHand = improvedVoicings.right.slice(0, improvedVoicings.right.indexOf('|'));
+                const rightRightHand = improvedVoicings.right.slice(improvedVoicings.right.indexOf('|') + 1);
+                
+                // Convert to ABC format
+                const leftLeftABC = convertToABCWithAccidentals(leftLeftHand);
+                const leftRightABC = convertToABCWithAccidentals(leftRightHand);
+                const currentLeftABC = convertToABCWithAccidentals(currentLeftHand);
+                const currentRightABC = convertToABCWithAccidentals(currentRightHand);
+                const rightLeftABC = convertToABCWithAccidentals(rightLeftHand);
+                const rightRightABC = convertToABCWithAccidentals(rightRightHand);
+                
+                // Create ABC notation with two staves for three chords side by side
+                const abcNotation = `X:1
+T:Chord Practice - Neighbors (Mode III)
+L:1/4
+K:C
+V:1 clef=treble
+[${leftRightABC.join('')}]4 [${currentRightABC.join('')}]4 [${rightRightABC.join('')}]4
+V:2 clef=bass
+[${leftLeftABC.join('')}]4 [${currentLeftABC.join('')}]4 [${rightLeftABC.join('')}]4`;
+                
+                console.log(`🎼 ABC notation for Mode III neighbors:`, abcNotation);
+                
+                // Render with ABC.js using two staves
+                try {
+                    ABCJS.renderAbc(staffDiv, abcNotation, {
+                        responsive: "resize",
+                        scale: 1.2,
+                        staffwidth: 800,
+                        paddingleft: 20,
+                        paddingright: 20,
+                        paddingtop: 20,
+                        paddingbottom: 20,
+                        add_classes: true,
+                        format: {
+                            titlefont: "serif 14",
+                            gchordfont: "serif 10",
+                            vocalfont: "serif 11"
+                        }
+                    });
+                    
+                    console.log(`✅ ABC.js rendered successfully with Mode III neighbors on two staves`);
+                    
+                } catch (error) {
+                    console.error(`❌ Error rendering ABC:`, error);
+                    staffDiv.innerHTML = `<p style="color: red;">Error rendering staff: ${error.message}</p>`;
+                }
+                
+            } else {
+                // Mode II or other modes: Use single staff
+                console.log('🎼 Mode II or other mode neighbors - using single staff');
+                
+                // Convert all voicings to ABC format
+                const leftABC = convertToABCWithAccidentals(improvedVoicings.left);
+                const currentABC = convertToABCWithAccidentals(improvedVoicings.current);
+                const rightABC = convertToABCWithAccidentals(improvedVoicings.right);
+                
+                // Create ABC notation with three chords side by side
+                const abcNotation = `X:1
+T:Chord Practice - Neighbors
+L:1/4
+K:C
+[${leftABC.join('')}]4 [${currentABC.join('')}]4 [${rightABC.join('')}]4`;
+                
+                console.log(`🎼 ABC notation for neighbors:`, abcNotation);
+                
+                // Render with ABC.js
+                try {
+                    ABCJS.renderAbc(staffDiv, abcNotation, {
+                        responsive: "resize",
+                        scale: 1.2,
+                        staffwidth: 600,
+                        paddingleft: 20,
+                        paddingright: 20,
+                        paddingtop: 20,
+                        paddingbottom: 20,
+                        add_classes: true,
+                        format: {
+                            titlefont: "serif 14",
+                            gchordfont: "serif 10",
+                            vocalfont: "serif 11"
+                        }
+                    });
+                    
+                    console.log(`✅ ABC.js rendered successfully with three chords`);
+                    
+                } catch (error) {
+                    console.error(`❌ Error rendering ABC:`, error);
+                    staffDiv.innerHTML = `<p style="color: red;">Error rendering staff: ${error.message}</p>`;
+                }
+            }
         }
     </script>
 </body>
